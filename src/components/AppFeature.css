@@ -1,0 +1,152 @@
+.app-feature {
+  padding: 100px 0;
+  background-color: #fafafa;
+}
+
+.app-feature-container {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+}
+
+.app-image-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.scenic-collage {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 550px;
+}
+
+.collage-main-img {
+  width: 80%;
+  height: 450px;
+  object-fit: cover;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.collage-sub-img {
+  width: 55%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border: 8px solid #fafafa; /* creates a seamless cutout effect against background */
+}
+
+.collage-badge {
+  position: absolute;
+  top: 40px;
+  right: -20px;
+  background-color: var(--primary-color);
+  color: #fff;
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 20px rgba(255, 152, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.collage-badge .badge-number {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.collage-badge .badge-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 992px) {
+  .scenic-collage {
+    height: 450px;
+    margin: 0 auto 40px;
+  }
+  
+  .collage-main-img {
+    height: 350px;
+  }
+  
+  .collage-sub-img {
+    height: 220px;
+  }
+  
+  .collage-badge {
+    right: 10px;
+  }
+}
+.app-content {
+  flex: 1;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.feature-list-item {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.feature-bullet {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #fff8f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.feature-text h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--secondary-color);
+  margin-bottom: 8px;
+}
+
+.feature-text p {
+  font-size: 15px;
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 992px) {
+  .app-feature-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .text-left {
+    text-align: center;
+  }
+  
+  .feature-list-item {
+    text-align: left;
+  }
+}

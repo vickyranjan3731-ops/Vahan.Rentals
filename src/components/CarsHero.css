@@ -1,0 +1,101 @@
+.cars-hero {
+  position: relative;
+  height: 600px;
+  /* Mountain backdrop image */
+  background-image: url('https://images.unsplash.com/photo-1518544801976-3e159e50e5ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80');
+  background-size: cover;
+  background-position: center 30%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.cars-hero-overlay {
+  position: absolute;
+  inset: 0;
+  /* Light overlay on the left to make text readable */
+  background: linear-gradient(90deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 40%, rgba(255,255,255,0) 100%);
+  z-index: 1;
+}
+
+.cars-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.cars-hero-text {
+  flex: 1;
+  max-width: 500px;
+}
+
+.hero-badge {
+  display: inline-block;
+  background-color: #e8f5e9;
+  color: #4caf50;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+.cars-hero .hero-title {
+  font-size: 56px;
+  font-weight: 800;
+  color: var(--secondary-color);
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.cars-hero .hero-subtitle {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.cars-hero-image {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  /* Position the car image partially outside the bounds if needed */
+  margin-right: -100px;
+}
+
+.hero-car-img {
+  width: 100%;
+  max-width: 800px;
+  /* Drop shadow to make it pop */
+  filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+  border-radius: 12px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+@media (max-width: 992px) {
+  .cars-hero-overlay {
+    background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.8));
+  }
+  
+  .cars-hero-content {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 60px;
+  }
+  
+  .cars-hero-text {
+    margin-bottom: 40px;
+  }
+  
+  .cars-hero-image {
+    margin-right: 0;
+    justify-content: center;
+  }
+}

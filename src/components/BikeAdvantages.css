@@ -1,0 +1,59 @@
+.bike-advantages {
+  padding: 100px 0;
+  background-color: #fff;
+}
+
+.bike-adv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.bike-adv-card {
+  background: #fafafa;
+  padding: 30px 24px;
+  border-radius: 20px;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.bike-adv-card:hover {
+  background: #fff8f0;
+  transform: translateY(-4px);
+}
+
+.bike-adv-icon {
+  width: 48px;
+  height: 48px;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.bike-adv-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--secondary-color);
+  margin-bottom: 12px;
+}
+
+.bike-adv-desc {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 992px) {
+  .bike-adv-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .bike-adv-grid {
+    grid-template-columns: 1fr;
+  }
+}

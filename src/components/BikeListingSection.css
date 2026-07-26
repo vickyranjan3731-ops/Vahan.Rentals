@@ -1,0 +1,100 @@
+.bike-listing-section {
+  padding: 80px 0;
+  background-color: #fafafa;
+}
+
+/* We reuse most of the global listing classes (listing-header, drive-toggle-wrapper, listing-search, listing-sidebar, listing-main) 
+   which were defined in CarListingSection.css to keep styles consistent and reduce duplicate code. */
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+  width: 100%;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  background-color: #fff;
+  border: 2px solid #eaeaea;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.load-more-icon {
+  color: var(--primary-color);
+  transition: transform 0.3s ease;
+}
+
+.load-more-btn:hover {
+  border-color: var(--primary-color);
+  background-color: #fffaf0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(255, 152, 0, 0.1);
+}
+
+.load-more-btn:hover .load-more-icon {
+  transform: translateY(3px);
+}
+
+.premium-section-header {
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto 60px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background-color: rgba(255, 152, 0, 0.1);
+  color: var(--primary-color);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.section-badge .dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+}
+
+.premium-title {
+  font-size: 42px;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.premium-title span {
+  color: var(--primary-color);
+}
+
+.premium-subtitle {
+  font-size: 16px;
+  color: #666;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .premium-title {
+    font-size: 32px;
+  }
+}
