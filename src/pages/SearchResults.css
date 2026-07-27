@@ -397,7 +397,7 @@
 
 .price-tag {
   display: flex;
-  align-baseline;
+  align-items: baseline;
   gap: 0.2rem;
 }
 
