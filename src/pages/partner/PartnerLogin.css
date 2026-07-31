@@ -1,0 +1,321 @@
+/* Partner Login Dedicated Page Styles */
+.partner-login-wrapper {
+  min-height: calc(100vh - 110px);
+  background: radial-gradient(circle at 50% 20%, #ecfdf5 0%, #f0fdf4 40%, #f8fafc 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.partner-login-card {
+  width: 100%;
+  max-width: 940px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(5, 150, 105, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.12);
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  overflow: hidden;
+}
+
+/* Left Branding Column */
+.partner-login-left {
+  background: linear-gradient(145deg, #064e3b 0%, #047857 60%, #059669 100%);
+  color: #ffffff;
+  padding: 3rem 2.2rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.partner-login-left::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.partner-login-icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a7f3d0;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.partner-login-brand-link {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.partner-login-brand-link span {
+  color: #34d399;
+}
+
+.partner-login-left h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 0.6rem 0;
+}
+
+.partner-login-left p {
+  font-size: 0.88rem;
+  color: #a7f3d0;
+  line-height: 1.55;
+  margin: 0 0 1.5rem 0;
+}
+
+.partner-benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.partner-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: #ecfdf5;
+}
+
+.partner-benefit-item .benefit-icon {
+  color: #34d399;
+  flex-shrink: 0;
+}
+
+/* Right Form Column */
+.partner-login-right {
+  padding: 3rem 2.8rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.partner-login-subtitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 0.8rem;
+  align-self: flex-start;
+}
+
+.partner-login-right h2 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.4rem 0;
+  letter-spacing: -0.5px;
+}
+
+.partner-login-desc {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.5;
+}
+
+.partner-login-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1.2rem;
+}
+
+.partner-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.partner-login-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.partner-login-form-group label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.partner-login-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.partner-login-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.partner-login-input:focus {
+  background: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+}
+
+.partner-login-toggle-pw {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.partner-login-select {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.partner-login-select:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+}
+
+.partner-login-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.2rem;
+}
+
+.partner-login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #475569;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.partner-login-demo-btn {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.partner-login-demo-btn:hover {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.partner-login-submit-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 10px 20px -5px rgba(5, 150, 105, 0.4);
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.partner-login-submit-btn:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -5px rgba(5, 150, 105, 0.5);
+}
+
+.partner-login-footer-info {
+  margin-top: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: #64748b;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.8rem;
+}
+
+.partner-login-footer-info span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@media (max-width: 840px) {
+  .partner-login-card {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+
+  .partner-login-left {
+    padding: 2rem 1.8rem;
+  }
+
+  .partner-login-right {
+    padding: 2rem 1.8rem;
+  }
+}

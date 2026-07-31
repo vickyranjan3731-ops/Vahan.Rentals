@@ -7,6 +7,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { bikeData, carData, experienceData } from '../data';
 import Callback from '../components/Callback';
 import AuthModal from '../components/AuthModal';
+import ReservationModal from '../components/ReservationModal';
 import './VehicleDetails.css';
 
 const fadeInUp = {
@@ -25,14 +26,24 @@ const staggerContainer = {
 const VehicleDetails = () => {
   const { id } = useParams();
   const [vehicle, setVehicle] = useState(null);
-  const [openFaq, setOpenFaq] = useState(0);
-
-  // Date selection state
+  const [selectedImg, setSelectedImg] = useState(0);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(() => {
-    const next = new Date();
-    next.setDate(next.getDate() + 2);
-    return next;
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    return nextDay;
+  });
+  const [openFaq, setOpenFaq] = useState(0);
+
+  // Reservation Registration & Auth state
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [bookingSuccessModal, setBookingSuccessModal] = useState(false);
+  const [completedBooking, setCompletedBooking] = useState(null);
+
+  const [userAuth, setUserAuth] = useState(() => {
+    const saved = localStorage.getItem('vahan_user_auth');
+    return saved ? JSON.parse(saved) : null;
   });
 
   const handleStartDateChange = (date) => {
@@ -53,30 +64,14 @@ const VehicleDetails = () => {
     return nextDay;
   };
 
-  // Auth & Booking state
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [bookingSuccessModal, setBookingSuccessModal] = useState(false);
-  const [bookingId, setBookingId] = useState('');
-  const [userAuth, setUserAuth] = useState(() => {
-    const saved = localStorage.getItem('vahan_user_auth');
-    return saved ? JSON.parse(saved) : null;
-  });
-
   const handleReserveNow = () => {
-    const saved = localStorage.getItem('vahan_user_auth');
-    if (!saved) {
-      setIsAuthOpen(true);
-    } else {
-      setBookingId(`VR-${Math.floor(1000 + Math.random() * 9000)}`);
-      setBookingSuccessModal(true);
-    }
+    setIsReservationModalOpen(true);
   };
 
   const handleAuthSuccess = (userData) => {
     setUserAuth(userData);
     setIsAuthOpen(false);
-    setBookingId(`VR-${Math.floor(1000 + Math.random() * 9000)}`);
-    setBookingSuccessModal(true);
+    setIsReservationModalOpen(true);
   };
 
   useEffect(() => {
@@ -167,18 +162,28 @@ const VehicleDetails = () => {
 
             {/* Host Banner */}
             <motion.div 
-              className="host-banner"
+              className="host-banner verified-host-banner-box"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-30px" }}
               variants={fadeInUp}
             >
-              <div className="host-info">
-                <h4>{vehicle.category} hosted by vahan.rentals</h4>
-                <p>Premium Service · Uttarakhand Special · Verified Host</p>
+              <div className="host-avatar-wrapper">
+                <div className="host-avatar">
+                  <img src="https://ui-avatars.com/api/?name=Vahan+Rentals&background=059669&color=fff" alt="Host" />
+                </div>
+                <span className="host-verified-badge-icon" title="Verified Host">
+                  <CheckCircle2 size={14} />
+                </span>
               </div>
-              <div className="host-avatar">
-                <img src="https://ui-avatars.com/api/?name=Vahan+Rentals&background=f9a826&color=fff" alt="Host" />
+              <div className="host-info">
+                <div className="host-name-row">
+                  <h4>Hosted by {vehicle.hostedBy || 'vahan.rentals'}</h4>
+                  <span className="verified-host-chip">
+                    <CheckCircle2 size={13} /> Verified Official Host
+                  </span>
+                </div>
+                <p>Official Fleet Partner · 24/7 Roadside Support · Verified Vehicle Inspection</p>
               </div>
             </motion.div>
 
@@ -440,9 +445,23 @@ const VehicleDetails = () => {
         subtitle="Enter your mobile/email to receive a 1-time OTP verification code."
       />
 
-      {/* Booking Confirmation Success Modal */}
+      {/* Vehicle Reservation Registration Modal */}
+      <ReservationModal 
+        isOpen={isReservationModalOpen}
+        onClose={() => setIsReservationModalOpen(false)}
+        vehicle={vehicle}
+        initialStartDate={startDate}
+        initialEndDate={endDate}
+        initialLocation={vehicle.location}
+        onReservationSuccess={(data) => {
+          setCompletedBooking(data);
+          setBookingSuccessModal(true);
+        }}
+      />
+
+      {/* Booking Confirmation Success Receipt Modal */}
       <AnimatePresence>
-        {bookingSuccessModal && (
+        {bookingSuccessModal && completedBooking && (
           <div className="auth-overlay">
             <motion.div 
               className="auth-backdrop"
@@ -456,7 +475,7 @@ const VehicleDetails = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              style={{ textAlign: 'center' }}
+              style={{ textAlign: 'center', maxWidth: '480px' }}
             >
               <button className="auth-close-btn" onClick={() => setBookingSuccessModal(false)}>
                 <X size={20} />
@@ -466,43 +485,84 @@ const VehicleDetails = () => {
                 <Check size={36} />
               </div>
 
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.35rem' }}>
-                Reservation Confirmed!
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.25rem' }}>
+                Reservation Registered!
               </h2>
-              <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1.25rem' }}>
-                Ref ID: <strong style={{ color: '#ea580c' }}>{bookingId}</strong>
+              <p style={{ fontSize: '0.88rem', color: '#64748b', marginBottom: '1.1rem' }}>
+                Booking Ref ID: <strong style={{ color: '#ff9800' }}>{completedBooking.bookingId}</strong>
               </p>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', textAlign: 'left', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ color: '#64748b' }}>Vehicle:</span>
-                  <strong style={{ color: '#0f172a' }}>{vehicle.title}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ color: '#64748b' }}>Location:</span>
-                  <strong>{vehicle.location}</strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ color: '#64748b' }}>Dates:</span>
-                  <strong>{startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - {endDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</strong>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', textAlign: 'left', fontSize: '0.84rem', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Renter Name:</span>
+                  <strong style={{ color: '#0f172a' }}>{completedBooking.fullName}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#64748b' }}>User Contact:</span>
-                  <strong>{userAuth?.identifier || '+91 70605 12661'}</strong>
+                  <span style={{ color: '#64748b' }}>Contact:</span>
+                  <strong>{completedBooking.phone}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>DL / ID No:</span>
+                  <strong>{completedBooking.licenseNo}</strong>
+                </div>
+                <div style={{ borderTop: '1px dashed #e2e8f0', margin: '4px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Vehicle:</span>
+                  <strong style={{ color: '#0f172a' }}>{completedBooking.vehicleTitle}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Pickup Hub:</span>
+                  <strong>{completedBooking.pickupLocation}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Rental Dates:</span>
+                  <strong>{completedBooking.formattedStartDate} - {completedBooking.formattedEndDate}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                  <span style={{ color: '#64748b' }}>Total Rental Fare:</span>
+                  <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>₹{completedBooking.totalAmount}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Online Advance Token:</span>
+                  <strong style={{ color: '#16a34a', fontSize: '0.95rem' }}>₹{completedBooking.totalAmountToPayNow}</strong>
+                </div>
+                {completedBooking.paymentMethod === 'pickup' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Balance Due at Pickup:</span>
+                    <strong style={{ color: '#ea580c' }}>₹{completedBooking.remainingAmountAtPickup}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                  <span style={{ color: '#64748b' }}>Payment Mode:</span>
+                  <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', fontSize: '0.78rem', fontWeight: 700 }}>
+                    {completedBooking.paymentMethod === 'pickup' ? `Token ₹${completedBooking.totalAmountToPayNow} Online + Pay at Counter` : 'Paid Full Amount Online'}
+                  </span>
                 </div>
               </div>
 
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '1.5rem', lineHeight: '1.4' }}>
-                ⚡ Our Rishikesh travel desk will send your handover receipt on WhatsApp within 10 minutes.
+              <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem', lineHeight: '1.4' }}>
+                ⚡ Our Uttarakhand travel desk has recorded your reservation. Bring your driving license & Govt ID at pickup.
               </p>
 
-              <button 
-                className="btn btn-primary btn-full" 
-                onClick={() => setBookingSuccessModal(false)}
-                style={{ padding: '0.85rem', fontWeight: 700 }}
-              >
-                Got It, Thank You!
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <a 
+                  href={`https://wa.me/917060512661?text=${encodeURIComponent(`Hi Vahan Rentals, I have registered booking ${completedBooking.bookingId} for ${completedBooking.vehicleTitle} (${completedBooking.formattedStartDate} to ${completedBooking.formattedEndDate}). Please confirm pickup details.`)}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn"
+                  style={{ background: '#25d366', color: '#ffffff', padding: '0.8rem', fontWeight: 700, borderRadius: '10px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                >
+                  💬 Send Slip on WhatsApp
+                </a>
+
+                <button 
+                  className="btn btn-outline btn-full" 
+                  onClick={() => setBookingSuccessModal(false)}
+                  style={{ padding: '0.75rem', fontWeight: 700 }}
+                >
+                  Close & Done
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

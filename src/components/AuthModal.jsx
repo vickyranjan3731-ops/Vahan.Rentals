@@ -1,27 +1,26 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, Mail, ArrowRight, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
+import { X, Mail, ArrowRight, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
 import './AuthModal.css';
 
-const AuthModal = ({ isOpen, onClose, onSuccess, title = "Login / Sign Up to Continue", subtitle = "Enter your details to receive a 1-time OTP verification code." }) => {
-  const [authMethod, setAuthMethod] = useState('phone'); // 'phone' or 'email'
-  const [phone, setPhone] = useState('');
+const AuthModal = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  title = "Login / Sign Up to Continue", 
+  subtitle = "Enter your email address to receive a 1-time OTP verification code." 
+}) => {
   const [email, setEmail] = useState('');
   const [step, setStep] = useState(1); // 1 = Input, 2 = OTP verification
   const [otp, setOtp] = useState(['', '', '', '']);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [timer, setTimer] = useState(30);
 
   if (!isOpen) return null;
 
   const handleSendOtp = (e) => {
     e.preventDefault();
-    if (authMethod === 'phone' && (!phone || phone.length < 10)) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-    if (authMethod === 'email' && (!email || !email.includes('@'))) {
+    if (!email || !email.includes('@')) {
       setErrorMsg('Please enter a valid email address.');
       return;
     }
@@ -51,8 +50,8 @@ const AuthModal = ({ isOpen, onClose, onSuccess, title = "Login / Sign Up to Con
     setTimeout(() => {
       setIsSubmitting(false);
       const userData = {
-        identifier: authMethod === 'phone' ? `+91 ${phone}` : email,
-        name: 'Rider User',
+        identifier: email,
+        name: email.split('@')[0] || 'Rider User',
         loggedInAt: new Date().toISOString()
       };
       localStorage.setItem('vahan_user_auth', JSON.stringify(userData));
@@ -114,7 +113,7 @@ const AuthModal = ({ isOpen, onClose, onSuccess, title = "Login / Sign Up to Con
             <p>
               {step === 1 
                 ? subtitle
-                : `Enter the 4-digit code sent to ${authMethod === 'phone' ? `+91 ${phone}` : email}`}
+                : `Enter the 4-digit code sent to ${email}`}
             </p>
           </div>
 
@@ -125,65 +124,31 @@ const AuthModal = ({ isOpen, onClose, onSuccess, title = "Login / Sign Up to Con
           )}
 
           {step === 1 ? (
-            <>
-              {/* Method Switcher */}
-              <div className="auth-toggle">
-                <button 
-                  className={`auth-toggle-btn ${authMethod === 'phone' ? 'active' : ''}`}
-                  onClick={() => { setAuthMethod('phone'); setErrorMsg(''); }}
-                >
-                  <Phone size={15} /> Mobile Number
-                </button>
-                <button 
-                  className={`auth-toggle-btn ${authMethod === 'email' ? 'active' : ''}`}
-                  onClick={() => { setAuthMethod('email'); setErrorMsg(''); }}
-                >
-                  <Mail size={15} /> Email Address
-                </button>
+            <form className="auth-form" onSubmit={handleSendOtp}>
+              <div className="input-group">
+                <div className="input-icon"><Mail size={18} /></div>
+                <input 
+                  type="email" 
+                  placeholder="rider@example.com" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required 
+                  autoFocus
+                />
               </div>
 
-              {/* Step 1 Form */}
-              <form className="auth-form" onSubmit={handleSendOtp}>
-                {authMethod === 'phone' ? (
-                  <div className="input-group phone-group">
-                    <span className="country-code">+91</span>
-                    <input 
-                      type="tel" 
-                      placeholder="70605 12661" 
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, '').slice(0, 10))}
-                      maxLength={10}
-                      required 
-                      autoFocus
-                    />
-                  </div>
-                ) : (
-                  <div className="input-group">
-                    <div className="input-icon"><Mail size={18} /></div>
-                    <input 
-                      type="email" 
-                      placeholder="rider@example.com" 
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required 
-                      autoFocus
-                    />
-                  </div>
+              <button 
+                type="submit" 
+                className="btn btn-primary btn-full auth-submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Sending OTP...' : (
+                  <>
+                    Send OTP <ArrowRight size={18} />
+                  </>
                 )}
-
-                <button 
-                  type="submit" 
-                  className="btn btn-primary btn-full auth-submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Sending OTP...' : (
-                    <>
-                      Send OTP <ArrowRight size={18} />
-                    </>
-                  )}
-                </button>
-              </form>
-            </>
+              </button>
+            </form>
           ) : (
             /* Step 2: OTP Verification */
             <form className="auth-form" onSubmit={handleVerifyOtp}>
@@ -213,14 +178,14 @@ const AuthModal = ({ isOpen, onClose, onSuccess, title = "Login / Sign Up to Con
               >
                 {isSubmitting ? 'Verifying...' : (
                   <>
-                    <CheckCircle2 size={18} /> Verify & Complete Reservation
+                    <CheckCircle2 size={18} /> Verify & Continue
                   </>
                 )}
               </button>
 
               <div className="resend-otp-row">
                 <button type="button" className="btn-link-sm" onClick={resetFlow}>
-                  <RotateCcw size={14} /> Change {authMethod === 'phone' ? 'Number' : 'Email'}
+                  <RotateCcw size={14} /> Change Email
                 </button>
               </div>
             </form>

@@ -31,7 +31,10 @@ const Hero = () => {
     return nextDay;
   };
 
+  const isSearchDisabled = !startDate || !endDate;
+
   const handleSearch = () => {
+    if (isSearchDisabled) return;
     const params = new URLSearchParams();
     if (location) params.set('location', location);
     if (vahanType) params.set('type', vahanType);
@@ -136,6 +139,8 @@ const Hero = () => {
           <button 
             className="btn btn-primary search-btn"
             onClick={handleSearch}
+            disabled={isSearchDisabled}
+            title={isSearchDisabled ? "Please select both start and end dates" : ""}
           >
             <Search size={18} />
             Search

@@ -13,6 +13,7 @@ import HelpCenter from './pages/HelpCenter';
 import TermsConditions from './pages/TermsConditions';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CancellationPolicy from './pages/CancellationPolicy';
+import CookiePolicy from './pages/CookiePolicy';
 import AboutUs from './pages/AboutUs';
 import Careers from './pages/Careers';
 import Blog from './pages/Blog';
@@ -20,14 +21,17 @@ import ContactUs from './pages/ContactUs';
 
 import Admin from './pages/admin/Admin';
 import AdminLogin from './pages/admin/AdminLogin';
+import PartnerLogin from './pages/partner/PartnerLogin';
+import PartnerDashboard from './pages/partner/PartnerDashboard';
 
 import './App.css';
 
 const AppContent = () => {
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/partner');
 
   const isAuthenticated = localStorage.getItem('vahan_admin_auth') === 'true';
+  const isPartnerAuthenticated = localStorage.getItem('vahan_partner_auth') === 'true';
 
   return (
     <div className="app">
@@ -45,6 +49,7 @@ const AppContent = () => {
         <Route path="/terms-and-conditions" element={<TermsConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+        <Route path="/cookie-policy" element={<CookiePolicy />} />
 
         {/* Company Routes */}
         <Route path="/about-us" element={<AboutUs />} />
@@ -52,8 +57,17 @@ const AppContent = () => {
         <Route path="/blog" element={<Blog />} />
         <Route path="/contact" element={<ContactUs />} />
 
-        {/* Admin Routes */}
+        {/* Admin & Partner Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/partner/login" element={<PartnerLogin />} />
+        <Route 
+          path="/partner/dashboard" 
+          element={isPartnerAuthenticated ? <PartnerDashboard /> : <Navigate to="/partner/login" replace />} 
+        />
+        <Route 
+          path="/partner" 
+          element={<Navigate to={isPartnerAuthenticated ? "/partner/dashboard" : "/partner/login"} replace />} 
+        />
         <Route 
           path="/admin/dashboard" 
           element={isAuthenticated ? <Admin /> : <Navigate to="/admin/login" replace />} 

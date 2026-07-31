@@ -104,27 +104,80 @@
 /* Host Banner */
 .host-banner {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
 }
 
-.host-info h4 {
-  font-size: 1.2rem;
-  margin-bottom: 0.25rem;
-}
-
-.host-info p {
-  color: var(--text-light);
-  font-size: 0.9rem;
+.host-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .host-avatar img {
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
+  border: 2px solid #059669;
+}
+
+.host-verified-badge-icon {
+  position: absolute;
+  bottom: 0;
+  right: -2px;
+  background: #059669;
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.host-info {
+  flex: 1;
+}
+
+.host-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+}
+
+.host-name-row h4 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #065f46;
+  margin: 0;
+}
+
+.verified-host-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #059669;
+  color: #ffffff;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+.host-info p {
+  color: #047857;
+  font-size: 0.85rem;
+  margin: 0;
+  font-weight: 500;
 }
 
 /* Detail Sections */

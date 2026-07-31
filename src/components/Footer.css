@@ -73,6 +73,35 @@
   margin-bottom: 12px;
 }
 
+.partner-login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 18px;
+  background: rgba(255, 122, 0, 0.12);
+  border: 1px solid var(--primary-color, #ff7a00);
+  color: var(--primary-color, #ff7a00);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.partner-login-btn:hover {
+  background: var(--primary-color, #ff7a00);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 122, 0, 0.35);
+}
+
+.footer-partner-link {
+  color: var(--primary-color, #ff7a00) !important;
+  font-weight: 600;
+}
+
 .footer-bottom {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 24px;

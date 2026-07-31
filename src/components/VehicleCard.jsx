@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import './VehicleCard.css';
@@ -51,6 +51,10 @@ const VehicleCard = ({ id, image, title, location, price, rating, reviews, objec
           </div>
         </div>
         <p className="card-location">{location}</p>
+        <div className="card-host-verified-bar">
+          <CheckCircle size={12} className="verified-check-icon" />
+          <span>Hosted by vahan.rentals</span>
+        </div>
         <p className="card-price">
           <span className="price-amount">{price}</span>/day
         </p>

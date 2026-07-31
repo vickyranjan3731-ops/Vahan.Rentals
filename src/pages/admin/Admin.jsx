@@ -3,12 +3,20 @@ import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Car, Bike, Compass, CalendarCheck, PhoneCall, 
-  TrendingUp, Users, Settings, Plus, Search, Filter, Edit3, Trash2, 
+  TrendingUp, Users, User, Settings, Plus, Search, Filter, Edit3, Trash2, 
   CheckCircle, Clock, XCircle, Download, LogOut, Eye, Bell, X, ShieldAlert,
-  Upload, Image
+  Upload, Image, ShieldCheck, Handshake, Wallet, MessageSquare
 } from 'lucide-react';
 import { bikeData, carData, experienceData } from '../../data';
 import './Admin.css';
+
+const initialPartnersData = [
+  { id: 'H-1000', name: 'vahan.rentals (Official Fleet)', owner: 'Vahan Official Desk', phone: '+91 70605 12661', email: 'official@vahan.rentals', type: 'Official Master Host', location: 'Tapovan Rishikesh (HQ)', vehiclesCount: 12, earnings: 348500, payoutStatus: 'Settled', status: 'Active Verified', isOfficial: true },
+  { id: 'H-8821', name: 'Himalayan Fleet Host', owner: 'Vikas Sharma', phone: '+91 70605 12661', email: 'partner@vahan.rentals', type: 'Bike & Scooty Host', location: 'Tapovan Rishikesh', vehiclesCount: 4, earnings: 121300, payoutStatus: 'Settled', status: 'Active Verified' },
+  { id: 'H-8822', name: 'Garhwal Motors & Cab Service', owner: 'Ramesh Singh', phone: '+91 98970 12345', email: 'garhwal.cabs@gmail.com', type: 'Car & Taxi Host', location: 'Dehradun Airport', vehiclesCount: 3, earnings: 84500, payoutStatus: 'Pending (₹18,500)', status: 'Active Verified' },
+  { id: 'H-8823', name: 'Ganga Valley Rentals', owner: 'Anuj Rawat', phone: '+91 94120 55667', email: 'ganga.rentals@gmail.com', type: 'Bike Host', location: 'Laxman Jhula', vehiclesCount: 2, earnings: 28000, payoutStatus: 'Settled', status: 'Active Verified' },
+  { id: 'H-8824', name: 'Rishikesh Express Fleet', owner: 'Deepak Joshi', phone: '+91 98370 99881', email: 'deepak.express@gmail.com', type: 'Franchise Partner', location: 'Rishikesh Station', vehiclesCount: 1, earnings: 12000, payoutStatus: 'Pending (₹5,200)', status: 'Pending Approval' },
+];
 
 const initialBookings = [
   { id: 'VR-1092', customer: 'Rahul Verma', vehicle: 'Royal Enfield Himalayan 450', type: 'Bike', dates: '18 Jul - 20 Jul 2026', price: '₹3,000', status: 'Confirmed', location: 'Tapovan Rishikesh' },
@@ -30,6 +38,93 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [fleetCategoryFilter, setFleetCategoryFilter] = useState('all');
+
+  // KYC User Verification state
+  const [kycRequests, setKycRequests] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vahan_admin_kyc_requests') || '[]');
+    } catch (err) {
+      return [];
+    }
+  });
+
+  const handleApproveKyc = (email) => {
+    const updatedRequests = kycRequests.map(r => r.email === email ? { ...r, verificationStatus: 'verified' } : r);
+    setKycRequests(updatedRequests);
+    localStorage.setItem('vahan_admin_kyc_requests', JSON.stringify(updatedRequests));
+
+    // Update current user auth if matching email
+    try {
+      const savedUser = JSON.parse(localStorage.getItem('vahan_user_auth') || '{}');
+      if (savedUser.email === email || savedUser.identifier === email) {
+        savedUser.verificationStatus = 'verified';
+        localStorage.setItem('vahan_user_auth', JSON.stringify(savedUser));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Partner Management State
+  const [partnersList, setPartnersList] = useState(initialPartnersData);
+  const [isAddPartnerModalOpen, setIsAddPartnerModalOpen] = useState(false);
+  const [newPartner, setNewPartner] = useState({
+    name: '',
+    owner: '',
+    phone: '',
+    email: '',
+    type: 'Bike & Scooty Host',
+    location: 'Tapovan Rishikesh'
+  });
+
+  const handleApprovePartner = (id) => {
+    setPartnersList(partnersList.map(p => p.id === id ? { ...p, status: 'Active Verified' } : p));
+  };
+
+  const handleSettlePartnerPayout = (id) => {
+    setPartnersList(partnersList.map(p => p.id === id ? { ...p, payoutStatus: 'Settled' } : p));
+  };
+
+  const handleAddPartnerSubmit = (e) => {
+    e.preventDefault();
+    if (!newPartner.name || !newPartner.owner || !newPartner.phone) {
+      alert('Please fill in agency name, owner name, and phone number.');
+      return;
+    }
+    const created = {
+      id: `H-${Math.floor(8825 + Math.random() * 100)}`,
+      name: newPartner.name,
+      owner: newPartner.owner,
+      phone: newPartner.phone,
+      email: newPartner.email || `${newPartner.name.toLowerCase().replace(/\s+/g, '')}@vahan.rentals`,
+      type: newPartner.type,
+      location: newPartner.location,
+      vehiclesCount: 0,
+      earnings: 0,
+      payoutStatus: 'Settled',
+      status: 'Active Verified'
+    };
+    setPartnersList([created, ...partnersList]);
+    setIsAddPartnerModalOpen(false);
+    setNewPartner({ name: '', owner: '', phone: '', email: '', type: 'Bike & Scooty Host', location: 'Tapovan Rishikesh' });
+  };
+
+  // Selected Booking Details Review Modal State
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
+  const [modalBookingStatus, setModalBookingStatus] = useState('');
+
+  const handleOpenBookingModal = (booking) => {
+    setSelectedBookingDetails(booking);
+    setModalBookingStatus(booking.status || 'Confirmed');
+  };
+
+  const handleSaveBookingModalStatus = (e) => {
+    e.preventDefault();
+    if (!selectedBookingDetails) return;
+    const targetId = selectedBookingDetails.id || selectedBookingDetails.bookingId;
+    handleUpdateBookingStatus(targetId, modalBookingStatus);
+    setSelectedBookingDetails(null);
+  };
 
   // Exit Modal State
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -53,6 +148,9 @@ const Admin = () => {
     title: '',
     category: 'Bikes & Scooties',
     itemType: 'Bike',
+    regNo: '', // 🔒 Vehicle Registration Plate Number (Internal Admin/Partner Only - Hidden from Customer Portal)
+    hostedBy: 'vahan.rentals', // Default host: Official Vahan.Rentals
+    isVerifiedHost: true,
     price: '',
     dailyRate: '',
     weeklyRate: '',
@@ -290,13 +388,36 @@ const Admin = () => {
           </button>
 
           <button 
-            className={`admin-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
+            className={`admin-nav-item ${activeTab === 'kyc' ? 'active' : ''}`}
+            onClick={() => setActiveTab('kyc')}
           >
-            <Settings size={18} />
-            <span>Settings</span>
+            <ShieldCheck size={18} />
+            <span>KYC Verifications</span>
+            <span className="admin-nav-count">{kycRequests.filter(r => r.verificationStatus === 'pending').length}</span>
+          </button>
+
+          <button 
+            className={`admin-nav-item ${activeTab === 'partners' ? 'active' : ''}`}
+            onClick={() => setActiveTab('partners')}
+          >
+            <Handshake size={18} />
+            <span>Partner Management</span>
+            <span className="admin-nav-count">{partnersList.length}</span>
           </button>
         </nav>
+
+        {/* Vahan Manager Sidebar Profile Card (Replaces Settings) */}
+        <div style={{ padding: '0 0.75rem 0.75rem 0.75rem' }}>
+          <div className="sidebar-manager-profile-card">
+            <div className="manager-avatar-circle">
+              AD
+            </div>
+            <div className="manager-info">
+              <h5>Vahan Manager</h5>
+              <p>Super Admin Desk</p>
+            </div>
+          </div>
+        </div>
 
         <div className="admin-sidebar-footer">
           <button 
@@ -423,8 +544,18 @@ const Admin = () => {
                     </thead>
                     <tbody>
                       {bookings.slice(0, 5).map(b => (
-                        <tr key={b.id}>
-                          <td><strong>{b.id}</strong></td>
+                        <tr key={b.id || b.bookingId}>
+                          <td>
+                            <button 
+                              type="button"
+                              className="btn-booking-id-click"
+                              onClick={() => handleOpenBookingModal(b)}
+                              title="Click to Review Full Reservation & Renter Verification Form"
+                            >
+                              <Eye size={13} style={{ marginRight: '4px' }} />
+                              <strong>{b.id || b.bookingId}</strong>
+                            </button>
+                          </td>
                           <td>{b.customer}</td>
                           <td>{b.vehicle}</td>
                           <td>{b.dates}</td>
@@ -435,27 +566,15 @@ const Admin = () => {
                             </span>
                           </td>
                           <td>
-                            <select 
-                              value={b.status} 
-                              disabled={b.status === 'Completed' || b.status === 'Cancelled'}
-                              onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                              style={{ 
-                                padding: '0.35rem 0.75rem', 
-                                borderRadius: '6px', 
-                                fontSize: '0.85rem', 
-                                borderColor: '#cbd5e1',
-                                background: (b.status === 'Completed' || b.status === 'Cancelled') ? '#f1f5f9' : '#ffffff',
-                                color: (b.status === 'Completed' || b.status === 'Cancelled') ? '#64748b' : '#0f172a',
-                                cursor: (b.status === 'Completed' || b.status === 'Cancelled') ? 'not-allowed' : 'pointer',
-                                opacity: (b.status === 'Completed' || b.status === 'Cancelled') ? 0.75 : 1,
-                                fontWeight: (b.status === 'Completed' || b.status === 'Cancelled') ? '600' : 'normal'
-                              }}
+                            <button 
+                              type="button"
+                              className="btn btn-outline" 
+                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => handleOpenBookingModal(b)}
+                              title="Open Full Details & Verification Form"
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Pending">Pending</option>
-                              <option value="Completed">🔒 Completed</option>
-                              <option value="Cancelled">🔒 Cancelled</option>
-                            </select>
+                              <Eye size={13} /> Review & Action
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -469,46 +588,50 @@ const Admin = () => {
           {/* TAB 2: FLEET MANAGEMENT */}
           {activeTab === 'fleet' && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-              <div className="admin-page-title">
-                <div>
-                  <h1>Fleet & Experience Inventory</h1>
-                  <p>Manage all listed bikes, scooties, self-drive cars, and adventure packages.</p>
+              
+              {/* STICKY TOP HEADER & FILTERS PANEL */}
+              <div className="admin-top-sticky-header">
+                <div className="admin-page-title" style={{ marginBottom: '1rem' }}>
+                  <div>
+                    <h1>Fleet & Experience Inventory</h1>
+                    <p>Manage all listed bikes, scooties, self-drive cars, and adventure packages.</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setIsSelectCategoryModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Plus size={18} /> Add New Vehicle
+                  </button>
                 </div>
-                <button className="btn btn-primary" onClick={() => setIsSelectCategoryModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Plus size={18} /> Add New Vehicle
-                </button>
-              </div>
 
-              {/* Filter Row */}
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <button 
-                  className={`btn ${fleetCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setFleetCategoryFilter('all')}
-                  style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
-                >
-                  All Fleet ({fleetList.length})
-                </button>
-                <button 
-                  className={`btn ${fleetCategoryFilter === 'Bike' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setFleetCategoryFilter('Bike')}
-                  style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
-                >
-                  Bikes & Scooties ({fleetList.filter(f => f.itemType === 'Bike').length})
-                </button>
-                <button 
-                  className={`btn ${fleetCategoryFilter === 'Car' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setFleetCategoryFilter('Car')}
-                  style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
-                >
-                  Cars & Cabs ({fleetList.filter(f => f.itemType === 'Car').length})
-                </button>
-                <button 
-                  className={`btn ${fleetCategoryFilter === 'Experience' ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setFleetCategoryFilter('Experience')}
-                  style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
-                >
-                  Experiences ({fleetList.filter(f => f.itemType === 'Experience').length})
-                </button>
+                {/* Filter Row */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button 
+                    className={`btn ${fleetCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setFleetCategoryFilter('all')}
+                    style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
+                  >
+                    All Fleet ({fleetList.length})
+                  </button>
+                  <button 
+                    className={`btn ${fleetCategoryFilter === 'Bike' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setFleetCategoryFilter('Bike')}
+                    style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
+                  >
+                    Bikes & Scooties ({fleetList.filter(f => f.itemType === 'Bike').length})
+                  </button>
+                  <button 
+                    className={`btn ${fleetCategoryFilter === 'Car' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setFleetCategoryFilter('Car')}
+                    style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
+                  >
+                    Cars & Cabs ({fleetList.filter(f => f.itemType === 'Car').length})
+                  </button>
+                  <button 
+                    className={`btn ${fleetCategoryFilter === 'Experience' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setFleetCategoryFilter('Experience')}
+                    style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
+                  >
+                    Experiences ({fleetList.filter(f => f.itemType === 'Experience').length})
+                  </button>
+                </div>
               </div>
 
               {/* Fleet Table Card */}
@@ -588,10 +711,12 @@ const Admin = () => {
           {/* TAB 3: RESERVATIONS */}
           {activeTab === 'bookings' && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-              <div className="admin-page-title">
-                <div>
-                  <h1>Customer Reservations</h1>
-                  <p>View and update all confirmed and pending customer vehicle bookings.</p>
+              <div className="admin-top-sticky-header">
+                <div className="admin-page-title" style={{ marginBottom: 0 }}>
+                  <div>
+                    <h1>Customer Reservations</h1>
+                    <p>View and update all confirmed and pending customer vehicle bookings.</p>
+                  </div>
                 </div>
               </div>
 
@@ -607,13 +732,23 @@ const Admin = () => {
                         <th>Pickup Point</th>
                         <th>Total Price</th>
                         <th>Status</th>
-                        <th>Update Status</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {bookings.map(b => (
-                        <tr key={b.id}>
-                          <td><strong>{b.id}</strong></td>
+                        <tr key={b.id || b.bookingId}>
+                          <td>
+                            <button 
+                              type="button"
+                              className="btn-booking-id-click"
+                              onClick={() => handleOpenBookingModal(b)}
+                              title="Click to Review Full Reservation & Renter Verification Form"
+                            >
+                              <Eye size={13} style={{ marginRight: '4px' }} />
+                              <strong>{b.id || b.bookingId}</strong>
+                            </button>
+                          </td>
                           <td>{b.customer}</td>
                           <td>{b.vehicle}</td>
                           <td>{b.dates}</td>
@@ -625,27 +760,15 @@ const Admin = () => {
                             </span>
                           </td>
                           <td>
-                            <select 
-                              value={b.status} 
-                              disabled={b.status === 'Completed' || b.status === 'Cancelled'}
-                              onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                              style={{ 
-                                padding: '0.35rem 0.75rem', 
-                                borderRadius: '6px', 
-                                fontSize: '0.85rem', 
-                                borderColor: '#cbd5e1',
-                                background: (b.status === 'Completed' || b.status === 'Cancelled') ? '#f1f5f9' : '#ffffff',
-                                color: (b.status === 'Completed' || b.status === 'Cancelled') ? '#64748b' : '#0f172a',
-                                cursor: (b.status === 'Completed' || b.status === 'Cancelled') ? 'not-allowed' : 'pointer',
-                                opacity: (b.status === 'Completed' || b.status === 'Cancelled') ? 0.75 : 1,
-                                fontWeight: (b.status === 'Completed' || b.status === 'Cancelled') ? '600' : 'normal'
-                              }}
+                            <button 
+                              type="button"
+                              className="btn btn-outline" 
+                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              onClick={() => handleOpenBookingModal(b)}
+                              title="Open Full Details & Verification Form"
                             >
-                              <option value="Confirmed">Confirmed</option>
-                              <option value="Pending">Pending</option>
-                              <option value="Completed">🔒 Completed</option>
-                              <option value="Cancelled">🔒 Cancelled</option>
-                            </select>
+                              <Eye size={13} /> Review Details & Action
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -756,7 +879,215 @@ const Admin = () => {
             </motion.div>
           )}
 
-          {/* TAB 5: SETTINGS */}
+          {/* TAB 5: KYC VERIFICATIONS DESK */}
+          {activeTab === 'kyc' && (
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+              <div className="admin-page-title">
+                <div>
+                  <h1>User Profile KYC Verifications</h1>
+                  <p>Review uploaded Driving Licenses & Govt IDs to grant Verified Renter badges for express vehicle checkout.</p>
+                </div>
+              </div>
+
+              <div className="admin-card">
+                <div className="admin-table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Renter Name</th>
+                        <th>Contact Email</th>
+                        <th>Phone</th>
+                        <th>DL Number</th>
+                        <th>Uploaded DL & ID Photos</th>
+                        <th>KYC Status</th>
+                        <th>Admin Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kycRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                            No pending KYC verification requests at this moment. Users can request verification from their Profile page.
+                          </td>
+                        </tr>
+                      ) : (
+                        kycRequests.map((r, idx) => (
+                          <tr key={r.email || idx}>
+                            <td><strong>{r.name || 'Rider User'}</strong></td>
+                            <td>{r.email}</td>
+                            <td>{r.phone || 'N/A'}</td>
+                            <td><strong>{r.licenseNo || 'N/A'}</strong></td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '8px', fontSize: '0.78rem' }}>
+                                {r.dlFileName && <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>DL: {r.dlFileName}</span>}
+                                {r.aadharFileName && <span style={{ background: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>ID: {r.aadharFileName}</span>}
+                                {!r.dlFileName && !r.aadharFileName && <span style={{ color: '#94a3b8' }}>No files attached</span>}
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`status-pill ${r.verificationStatus === 'verified' ? 'success' : r.verificationStatus === 'pending' ? 'warning' : 'danger'}`}>
+                                {r.verificationStatus === 'verified' ? '✅ Verified Renter' : r.verificationStatus === 'pending' ? '⏳ Pending Review' : 'Unverified'}
+                              </span>
+                            </td>
+                            <td>
+                              {r.verificationStatus !== 'verified' ? (
+                                <button 
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
+                                  onClick={() => handleApproveKyc(r.email)}
+                                >
+                                  <CheckCircle size={14} style={{ marginRight: '4px' }} /> Approve & Mark Verified
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: '0.8rem', color: '#16a34a', fontWeight: '700' }}>✓ Approved Renter</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 6: PARTNER & HOST MANAGEMENT */}
+          {activeTab === 'partners' && (
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+              <div className="admin-page-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h1>Host & Partner Management Desk</h1>
+                  <p>Manage registered vehicle hosts, approve onboarding applications, track partner fleet, and settle revenue payouts.</p>
+                </div>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => setIsAddPartnerModalOpen(true)}
+                  style={{ background: '#059669', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={16} /> Onboard New Partner
+                </button>
+              </div>
+
+              {/* Partner Overview Stats */}
+              <div className="admin-stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
+                    <Handshake size={22} />
+                  </div>
+                  <div>
+                    <span className="stat-label">Active Host Partners</span>
+                    <h3 className="stat-value">{partnersList.filter(p => p.status === 'Active Verified').length} Hosts</h3>
+                  </div>
+                </div>
+
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ background: '#ccfbf1', color: '#0d9488' }}>
+                    <Bike size={22} />
+                  </div>
+                  <div>
+                    <span className="stat-label">Partner Fleet Listed</span>
+                    <h3 className="stat-value">{partnersList.reduce((acc, curr) => acc + curr.vehiclesCount, 0)} Vehicles</h3>
+                  </div>
+                </div>
+
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                    <Wallet size={22} />
+                  </div>
+                  <div>
+                    <span className="stat-label">Total Partner Earnings</span>
+                    <h3 className="stat-value">₹{partnersList.reduce((acc, curr) => acc + curr.earnings, 0).toLocaleString()}</h3>
+                  </div>
+                </div>
+
+                <div className="stat-card">
+                  <div className="stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
+                    <Clock size={22} />
+                  </div>
+                  <div>
+                    <span className="stat-label">Pending Approval Requests</span>
+                    <h3 className="stat-value">{partnersList.filter(p => p.status !== 'Active Verified').length} Pending</h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Partners Table */}
+              <div className="admin-card">
+                <div className="admin-table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Host ID & Agency Name</th>
+                        <th>Owner Name</th>
+                        <th>Contact Phone / Email</th>
+                        <th>Category / Hub</th>
+                        <th>Fleet Count</th>
+                        <th>Total Earnings & Payout</th>
+                        <th>Status</th>
+                        <th>Admin Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {partnersList.map((p) => (
+                        <tr key={p.id}>
+                          <td>
+                            <strong>{p.name}</strong>
+                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700' }}>ID: {p.id}</div>
+                          </td>
+                          <td><strong>{p.owner}</strong></td>
+                          <td>
+                            <div>{p.phone}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.email}</div>
+                          </td>
+                          <td>
+                            <span className="type-badge">{p.type}</span>
+                            <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>📍 {p.location}</div>
+                          </td>
+                          <td><strong>{p.vehiclesCount} Vehicles</strong></td>
+                          <td>
+                            <strong>₹{p.earnings.toLocaleString()}</strong>
+                            <div style={{ fontSize: '0.74rem', color: p.payoutStatus === 'Settled' ? '#16a34a' : '#d97706', fontWeight: '700' }}>
+                              {p.payoutStatus}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`status-pill ${p.status === 'Active Verified' ? 'success' : 'warning'}`}>
+                              {p.status === 'Active Verified' ? '🟢 Active Verified' : '⏳ Pending Review'}
+                            </span>
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {p.status !== 'Active Verified' && (
+                                <button 
+                                  className="btn btn-primary"
+                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
+                                  onClick={() => handleApprovePartner(p.id)}
+                                >
+                                  Approve Partner
+                                </button>
+                              )}
+                              {p.payoutStatus.includes('Pending') && (
+                                <button 
+                                  className="btn btn-outline"
+                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: '#059669', borderColor: '#059669' }}
+                                  onClick={() => handleSettlePartnerPayout(p.id)}
+                                >
+                                  Settle Payout
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 7: SETTINGS */}
           {activeTab === 'settings' && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
               <div className="admin-page-title">
@@ -889,18 +1220,39 @@ const Admin = () => {
                     Basic Vehicle & Portal Identity
                   </h4>
 
-                  <div className="admin-form-group">
-                    <label>Vehicle / Listing Title *</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. Royal Enfield Himalayan 450 (Kamet White)" 
-                      required 
-                      value={newVehicle.title}
-                      onChange={(e) => setNewVehicle({ ...newVehicle, title: e.target.value })}
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div className="admin-form-group">
+                      <label>Vehicle / Listing Title *</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Royal Enfield Himalayan 450 (Kamet White)" 
+                        required 
+                        value={newVehicle.title}
+                        onChange={(e) => setNewVehicle({ ...newVehicle, title: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        Assigned Host Partner <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>(🔒 Locked / Auto Assigned)</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        value={newVehicle.hostedBy ? `${newVehicle.hostedBy} (✓ Verified Host)` : 'vahan.rentals (Official Master Fleet) ☑ Verified'}
+                        disabled={true}
+                        readOnly={true}
+                        style={{ 
+                          background: '#f1f5f9', 
+                          borderColor: '#cbd5e1', 
+                          fontWeight: '700', 
+                          color: '#0f172a',
+                          cursor: 'not-allowed' 
+                        }}
+                      />
+                    </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
                     <div className="admin-form-group">
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         Item Type <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>(🔒 Auto Selected)</span>
@@ -925,7 +1277,7 @@ const Admin = () => {
 
                     <div className="admin-form-group">
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        Portal Category <span style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: '700' }}>(Select Vehicle Subtype) *</span>
+                        Portal Category <span style={{ fontSize: '0.72rem', color: '#ea580c', fontWeight: '700' }}>(Select Subtype) *</span>
                       </label>
                       <select 
                         value={newVehicle.category}
@@ -959,6 +1311,19 @@ const Admin = () => {
                           </>
                         )}
                       </select>
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        Vehicle Reg. No. <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>(🔒 Admin Only)</span>
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. UK07AB1234" 
+                        value={newVehicle.regNo || ''}
+                        onChange={(e) => setNewVehicle({ ...newVehicle, regNo: e.target.value })}
+                        style={{ background: '#ffffff', borderColor: '#cbd5e1' }}
+                      />
                     </div>
 
                     <div className="admin-form-group">
@@ -1347,6 +1712,277 @@ const Admin = () => {
                     <CheckCircle size={16} /> Save & Lock Status
                   </button>
                 </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Onboard New Partner */}
+      <AnimatePresence>
+        {isAddPartnerModalOpen && (
+          <div className="admin-modal-overlay">
+            <motion.div 
+              className="admin-modal-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddPartnerModalOpen(false)}
+            />
+            <motion.div 
+              className="admin-modal-card"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            >
+              <div className="admin-modal-header">
+                <h3>Onboard New Vehicle Partner / Host</h3>
+                <button onClick={() => setIsAddPartnerModalOpen(false)} className="admin-modal-close"><X size={20} /></button>
+              </div>
+
+              <form onSubmit={handleAddPartnerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+                <div className="admin-form-group">
+                  <label>Host Agency / Business Name *</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Kedarnath Bike Host" 
+                    value={newPartner.name}
+                    onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
+                    required 
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="admin-form-group">
+                    <label>Owner Full Name *</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Rajesh Kumar" 
+                      value={newPartner.owner}
+                      onChange={(e) => setNewPartner({ ...newPartner, owner: e.target.value })}
+                      required 
+                    />
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label>Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      placeholder="e.g. +91 9876543210" 
+                      value={newPartner.phone}
+                      onChange={(e) => setNewPartner({ ...newPartner, phone: e.target.value })}
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="admin-form-group">
+                    <label>Category</label>
+                    <select 
+                      value={newPartner.type}
+                      onChange={(e) => setNewPartner({ ...newPartner, type: e.target.value })}
+                    >
+                      <option value="Bike & Scooty Host">🛵 Bike & Scooty Host</option>
+                      <option value="Car & Taxi Host">🚗 Car & Taxi Host</option>
+                      <option value="Franchise Partner">📍 Franchise Hub Partner</option>
+                    </select>
+                  </div>
+
+                  <div className="admin-form-group">
+                    <label>Pickup Location Hub</label>
+                    <select 
+                      value={newPartner.location}
+                      onChange={(e) => setNewPartner({ ...newPartner, location: e.target.value })}
+                    >
+                      <option value="Tapovan Rishikesh">Tapovan Rishikesh Hub</option>
+                      <option value="Rishikesh Station">Rishikesh Station</option>
+                      <option value="Dehradun Airport">Dehradun Airport</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setIsAddPartnerModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: '#059669', borderColor: '#059669', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <CheckCircle size={16} /> Save & Activate Partner
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Full Booking & Renter Verification Form Review */}
+      <AnimatePresence>
+        {selectedBookingDetails && (
+          <div className="admin-modal-overlay">
+            <motion.div 
+              className="admin-modal-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedBookingDetails(null)}
+            />
+            <motion.div 
+              className="admin-modal-card booking-review-modal-card"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            >
+              <div className="admin-modal-header" style={{ background: '#f8fafc', padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="booking-ref-title-badge">REF: {selectedBookingDetails.id || selectedBookingDetails.bookingId}</span>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a' }}>Reservation & Renter Verification Form</h3>
+                </div>
+                <button onClick={() => setSelectedBookingDetails(null)} className="admin-modal-close"><X size={20} /></button>
+              </div>
+
+              <form onSubmit={handleSaveBookingModalStatus} style={{ padding: '1.5rem', overflowY: 'auto', maxHeight: '80vh' }}>
+                
+                {/* SECTION 1: PRIMARY RENTER IDENTITY & CONTACT */}
+                <div className="booking-review-section">
+                  <div className="review-section-header">
+                    <User size={16} className="text-primary" />
+                    <h4>Primary Renter Verification & Contact Info</h4>
+                  </div>
+
+                  <div className="review-grid-3">
+                    <div className="review-field-box">
+                      <span className="field-label">Full Renter Name</span>
+                      <strong className="field-value">{selectedBookingDetails.customer || selectedBookingDetails.renterName || 'Rahul Verma'}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">Mobile Number (WhatsApp)</span>
+                      <strong className="field-value">{selectedBookingDetails.phone || '+91 70605 12661'}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">Driving License / Govt ID</span>
+                      <strong className="field-value text-emerald">{selectedBookingDetails.licenseNo || 'UK0720210098412'}</strong>
+                    </div>
+                  </div>
+
+                  {/* ID Upload Files Status */}
+                  <div className="id-verification-files-row" style={{ marginTop: '12px', display: 'flex', gap: '12px' }}>
+                    <div className="id-file-badge green">
+                      <CheckCircle size={14} />
+                      <span>Driving License Document Verified</span>
+                    </div>
+                    <div className="id-file-badge blue">
+                      <ShieldCheck size={14} />
+                      <span>Aadhaar / ID Proof Verified</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: RESERVED VEHICLE & PICKUP SCHEDULE */}
+                <div className="booking-review-section" style={{ marginTop: '16px' }}>
+                  <div className="review-section-header">
+                    <Bike size={16} className="text-primary" />
+                    <h4>Reserved Vehicle & Pickup Hub</h4>
+                  </div>
+
+                  <div className="review-vehicle-box">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div className="review-v-thumb-box">
+                        <img 
+                          src={selectedBookingDetails.vehicleImage || 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=300'} 
+                          alt="Vehicle" 
+                        />
+                      </div>
+                      <div>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', color: '#0f172a' }}>
+                          {selectedBookingDetails.vehicle || 'Royal Enfield Himalayan 450'}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                          📍 Pickup Hub: <strong>{selectedBookingDetails.location || 'Tapovan Rishikesh Hub'}</strong>
+                        </p>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                          📅 Duration: <strong>{selectedBookingDetails.dates || '18 Jul - 20 Jul 2026'}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 3: FARE BREAKDOWN & PAYMENT */}
+                <div className="booking-review-section" style={{ marginTop: '16px' }}>
+                  <div className="review-section-header">
+                    <Wallet size={16} className="text-primary" />
+                    <h4>Payment Breakdown & Settlement</h4>
+                  </div>
+
+                  <div className="review-grid-3">
+                    <div className="review-field-box">
+                      <span className="field-label">Total Booking Fare</span>
+                      <strong className="field-value" style={{ fontSize: '1.1rem', color: '#0f172a' }}>
+                        {selectedBookingDetails.price || '₹3,000'}
+                      </strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">Online Advance Paid</span>
+                      <strong className="field-value text-emerald">
+                        ₹300 Paid Online (Token)
+                      </strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">Balance Due at Pickup Desk</span>
+                      <strong className="field-value" style={{ color: '#ea580c' }}>
+                        ₹2,700 (Pay at Counter)
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 4: ADMIN STATUS REVIEW & ACTIONS */}
+                <div className="booking-review-section" style={{ marginTop: '16px', background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <div className="review-section-header">
+                    <Settings size={16} className="text-primary" />
+                    <h4>Admin Decision & Booking Status Action</h4>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', alignItems: 'center' }}>
+                    <div className="admin-form-group">
+                      <label>Update Reservation Status *</label>
+                      <select 
+                        value={modalBookingStatus}
+                        onChange={(e) => setModalBookingStatus(e.target.value)}
+                        style={{ padding: '10px', borderRadius: '8px', fontWeight: '700', fontSize: '0.9rem', borderColor: '#ea580c' }}
+                      >
+                        <option value="Confirmed">🟢 Confirmed & Token Paid</option>
+                        <option value="Active Trip">⚡ Active Trip (On Road)</option>
+                        <option value="Completed">✅ Completed & Handed Over</option>
+                        <option value="Cancelled">❌ Cancelled / Refunded</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
+                      <a 
+                        href={`https://wa.me/917060512661?text=${encodeURIComponent(`Hi ${selectedBookingDetails.customer || 'Customer'}, your booking ${selectedBookingDetails.id || selectedBookingDetails.bookingId} (${selectedBookingDetails.vehicle}) has been reviewed & updated to ${modalBookingStatus}.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-outline"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#16a34a', borderColor: '#86efac' }}
+                      >
+                        <MessageSquare size={14} /> Send WhatsApp Voucher
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setSelectedBookingDetails(null)}>Close</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: '#ea580c', borderColor: '#ea580c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle size={16} /> Save & Lock Booking Status
+                  </button>
+                </div>
+
               </form>
             </motion.div>
           </div>

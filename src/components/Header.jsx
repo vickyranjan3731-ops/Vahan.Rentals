@@ -1,17 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Compass, Bike, Car, Menu, User, X } from 'lucide-react'; 
+import { Compass, Bike, Car, Menu, User, X, Volume2, Clock } from 'lucide-react'; 
 import AuthModal from './AuthModal';
+import UserProfileModal from './UserProfileModal';
 import './Header.css';
 
 const Header = () => {
   const location = useLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState('');
+  const [fontSizeLevel, setFontSizeLevel] = useState('normal');
+
   const [userAuth, setUserAuth] = useState(() => {
     const saved = localStorage.getItem('vahan_user_auth');
     return saved ? JSON.parse(saved) : null;
   });
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      setCurrentDateTime(`${day}-${month}-${year} | ${hours}:${minutes}:${seconds}`);
+    };
+    updateTime();
+    const timer = setInterval(updateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleFontSizeChange = (level) => {
+    setFontSizeLevel(level);
+    if (level === 'small') {
+      document.documentElement.style.fontSize = '14px';
+    } else if (level === 'normal') {
+      document.documentElement.style.fontSize = '16px';
+    } else if (level === 'large') {
+      document.documentElement.style.fontSize = '18px';
+    }
+  };
 
   const handleAuthSuccess = (data) => {
     setUserAuth(data);
@@ -21,10 +53,55 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('vahan_user_auth');
     setUserAuth(null);
+    setIsProfileOpen(false);
   };
   
   return (
     <>
+      {/* Top Announcement & Live Time Bar */}
+      <div className="top-announcement-bar">
+        <div className="container top-bar-container">
+          <div className="top-bar-left">
+            <span className="announcement-badge">
+              <Volume2 size={11} />
+            </span>
+            <div className="ticker-text">
+              <strong>Travel Advisory:</strong> Passengers & renters are advised to check vehicle condition, platform details & helmet rules before trip commencement.
+            </div>
+          </div>
+
+          <div className="top-bar-right">
+            <span className="live-clock">
+              <Clock size={11} style={{ marginRight: 4, verticalAlign: '-1px' }} />
+              {currentDateTime}
+            </span>
+            <div className="font-controls">
+              <button 
+                className={`font-btn ${fontSizeLevel === 'small' ? 'active' : ''}`}
+                onClick={() => handleFontSizeChange('small')}
+                title="Decrease Font Size"
+              >
+                A-
+              </button>
+              <button 
+                className={`font-btn ${fontSizeLevel === 'normal' ? 'active' : ''}`}
+                onClick={() => handleFontSizeChange('normal')}
+                title="Default Font Size"
+              >
+                A
+              </button>
+              <button 
+                className={`font-btn ${fontSizeLevel === 'large' ? 'active' : ''}`}
+                onClick={() => handleFontSizeChange('large')}
+                title="Increase Font Size"
+              >
+                A+
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <header className="header">
         <div className="container header-container">
           {/* Mobile Menu Toggle */}
@@ -55,16 +132,22 @@ const Header = () => {
           </div>
 
           <div className="header-actions">
-            {userAuth ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--secondary-color)' }}>
-                  👤 {userAuth.identifier}
-                </span>
-                <button className="btn btn-outline" style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }} onClick={handleLogout}>
-                  Logout
+            {userAuth ? (() => {
+              const rawName = userAuth.name || (userAuth.email ? userAuth.email.split('@')[0] : (userAuth.identifier ? userAuth.identifier.split('@')[0] : 'Rider'));
+              const displayName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+              return (
+                <button 
+                  className="user-profile-pill" 
+                  onClick={() => setIsProfileOpen(true)}
+                  title="Open My Profile & Bookings"
+                >
+                  <div className="user-pill-avatar">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="user-pill-text">{displayName}</span>
                 </button>
-              </div>
-            ) : (
+              );
+            })() : (
               <button className="btn btn-outline login-btn" onClick={() => setIsAuthOpen(true)}>
                 <span className="login-text">Login/Sign Up</span>
                 <User className="login-icon" size={20} />
@@ -75,6 +158,14 @@ const Header = () => {
       </header>
       
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onSuccess={handleAuthSuccess} />
+      
+      <UserProfileModal 
+        isOpen={isProfileOpen} 
+        onClose={() => setIsProfileOpen(false)} 
+        userAuth={userAuth}
+        onLogout={handleLogout}
+        onProfileUpdate={(updatedData) => setUserAuth(updatedData)}
+      />
     </>
   );
 };

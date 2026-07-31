@@ -101,9 +101,12 @@ const SearchResults = () => {
     return nextDay;
   };
 
+  const isRefineDisabled = !startDate || !endDate;
+
   // Handle refinement search submission
   const handleRefineSearch = (e) => {
     e.preventDefault();
+    if (isRefineDisabled) return;
     const params = new URLSearchParams();
     if (location) params.set('location', location);
     if (activeTab !== 'All') params.set('type', activeTab);
@@ -188,7 +191,12 @@ const SearchResults = () => {
               </select>
             </div>
 
-            <button type="submit" className="refine-submit-btn">
+            <button 
+              type="submit" 
+              className="refine-submit-btn" 
+              disabled={isRefineDisabled} 
+              title={isRefineDisabled ? "Please select both start and end dates" : ""}
+            >
               <Search size={18} /> Update Search
             </button>
           </form>

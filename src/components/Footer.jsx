@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ShieldCheck } from 'lucide-react';
 import './Footer.css';
 
 const Footer = () => {
@@ -29,6 +30,7 @@ const Footer = () => {
             <Link to="/terms-and-conditions">Terms & Conditions</Link>
             <Link to="/privacy-policy">Privacy Policy</Link>
             <Link to="/cancellation-policy">Cancellation</Link>
+            <Link to="/cookie-policy">Cookie Policy</Link>
           </div>
           
           <div className="footer-links-group">
@@ -37,6 +39,7 @@ const Footer = () => {
             <Link to="/careers">Careers</Link>
             <Link to="/blog">Blog</Link>
             <Link to="/contact">Contact</Link>
+            <Link to="/partner/login" className="footer-partner-link">Partner Portal</Link>
           </div>
         </div>
         
@@ -45,6 +48,10 @@ const Footer = () => {
           <p>+91 70605 12661</p>
           <p>info@vahan.rentals</p>
           <p>Rishikesh, Uttarakhand</p>
+
+          <Link to="/partner/login" className="partner-login-btn">
+            <ShieldCheck size={16} /> Partner Login
+          </Link>
         </div>
         
       </div>

@@ -137,6 +137,16 @@
   margin-left: 12px;
 }
 
+.search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 /* React DatePicker Custom Overrides */
 .react-datepicker-wrapper,
 .react-datepicker__input-container {
