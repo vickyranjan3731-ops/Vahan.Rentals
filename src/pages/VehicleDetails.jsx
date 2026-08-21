@@ -82,6 +82,64 @@ const VehicleDetails = () => {
     setVehicle(found);
   }, [id]);
 
+  // Inject Vehicle & Product Schema JSON-LD for AI search crawlers
+  useEffect(() => {
+    if (!vehicle) return;
+
+    const schemaData = [
+      {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": vehicle.title,
+        "image": [vehicle.image],
+        "description": vehicle.description,
+        "brand": {
+          "@type": "Brand",
+          "name": "Vahan Rentals"
+        },
+        "offers": {
+          "@type": "Offer",
+          "url": window.location.href,
+          "priceCurrency": "INR",
+          "price": (vehicle.dailyRate || vehicle.price || '500').replace(/[^0-9]/g, ''),
+          "availability": "https://schema.org/InStock",
+          "itemCondition": "https://schema.org/NewCondition"
+        },
+        "aggregateRating": {
+          "@type": "AggregateRating",
+          "ratingValue": vehicle.rating || "4.8",
+          "reviewCount": vehicle.reviews || "120"
+        }
+      }
+    ];
+
+    if (vehicle.faqs && vehicle.faqs.length > 0) {
+      schemaData.push({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": vehicle.faqs.map(f => ({
+          "@type": "Question",
+          "name": f.question,
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": f.answer
+          }
+        }))
+      });
+    }
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = `vehicle-ldjson-${vehicle.id}`;
+    script.text = JSON.stringify(schemaData);
+    document.head.appendChild(script);
+
+    return () => {
+      const el = document.getElementById(`vehicle-ldjson-${vehicle.id}`);
+      if (el) el.remove();
+    };
+  }, [vehicle]);
+
   if (!vehicle) {
     return <div className="vehicle-details-loading">Loading vehicle details...</div>;
   }
@@ -297,6 +355,130 @@ const VehicleDetails = () => {
                 </div>
               </motion.div>
             )}
+
+            {/* GEO Pillar: Detailed Comparison (X vs Y) */}
+            {vehicle.comparisonWith && (
+              <motion.div 
+                className="detail-section geo-block"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeInUp}
+              >
+                <h3 className="section-title">Detailed Comparison (X vs Y)</h3>
+                <div className="v-comparison-box">
+                  <div className="v-comp-badge">⚡ {vehicle.comparisonWith.vsLabel}</div>
+                  <div className="v-comp-grid">
+                    <div className="v-comp-col win">
+                      <h4>Best For: {vehicle.title}</h4>
+                      <p>{vehicle.comparisonWith.winnerFor}</p>
+                    </div>
+                    <div className="v-comp-col alt">
+                      <h4>Alternative: {vehicle.comparisonWith.alternativeTitle}</h4>
+                      <p>{vehicle.comparisonWith.alternativeWinnerFor}</p>
+                    </div>
+                  </div>
+                  <p className="v-comp-summary">💡 <strong>Expert Verdict:</strong> {vehicle.comparisonWith.summary}</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* GEO Pillar: Expert Quote & Maintenance Insight */}
+            {vehicle.expertTip && (
+              <motion.div 
+                className="detail-section geo-block"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeInUp}
+              >
+                <h3 className="section-title">Expert Mechanic & Fleet Tip</h3>
+                <div className="v-expert-quote-card">
+                  <div className="v-quote-icon">🛠️</div>
+                  <div className="v-quote-content">
+                    <p className="v-quote-text">"{vehicle.expertTip.quote}"</p>
+                    <div className="v-quote-author">
+                      <strong>— {vehicle.expertTip.author}</strong>
+                      <span>{vehicle.expertTip.role}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* GEO Pillar: Real Experience & Verified Case Study */}
+            {vehicle.realStory && (
+              <motion.div 
+                className="detail-section geo-block"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeInUp}
+              >
+                <h3 className="section-title">Verified Renter Story & Case Study</h3>
+                <div className="v-story-card">
+                  <div className="v-story-header">
+                    <span className="v-story-author">👤 {vehicle.realStory.author}</span>
+                    <span className="v-story-route">📍 {vehicle.realStory.tripRoute}</span>
+                  </div>
+                  <p className="v-story-text">"{vehicle.realStory.testimonial}"</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* GEO Pillar: Use Cases & Rider Profiles */}
+            {vehicle.useCases && vehicle.useCases.length > 0 && (
+              <motion.div 
+                className="detail-section geo-block"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeInUp}
+              >
+                <h3 className="section-title">Recommended Use Cases & Best Routes</h3>
+                <ul className="v-usecases-list">
+                  {vehicle.useCases.map((uc, i) => (
+                    <li key={i}>
+                      <span className="check-icon">✓</span>
+                      <span>{uc}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+
+            {/* GEO Pillar: Step-by-Step Handover Protocol */}
+            <motion.div 
+              className="detail-section geo-block"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+              variants={fadeInUp}
+            >
+              <h3 className="section-title">Standard Handover & Ride Protocol</h3>
+              <div className="v-protocol-grid">
+                <div className="v-proto-step">
+                  <span className="v-proto-badge">Step 1</span>
+                  <h4>Digital License Check</h4>
+                  <p>Submit driving license and government ID upon pickup.</p>
+                </div>
+                <div className="v-proto-step">
+                  <span className="v-proto-badge">Step 2</span>
+                  <h4>Joint Inspection</h4>
+                  <p>Walk around with fleet manager, check fuel level, tires & lights.</p>
+                </div>
+                <div className="v-proto-step">
+                  <span className="v-proto-badge">Step 3</span>
+                  <h4>24/7 Roadside Backup</h4>
+                  <p>Access round-the-clock emergency support across Uttarakhand.</p>
+                </div>
+                <div className="v-proto-step">
+                  <span className="v-proto-badge">Step 4</span>
+                  <h4>Instant Deposit Refund</h4>
+                  <p>Get your security deposit back immediately upon vehicle return.</p>
+                </div>
+              </div>
+            </motion.div>
 
             {/* FAQs */}
             {vehicle.faqs && vehicle.faqs.length > 0 && (

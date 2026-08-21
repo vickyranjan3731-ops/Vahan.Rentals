@@ -6,7 +6,7 @@ import {
   Settings, Plus, Search, Filter, CheckCircle2, Clock,
   TrendingUp, Users, LogOut, ShieldCheck, MapPin, Eye,
   ArrowUpRight, AlertCircle, Sparkles, X, Edit3, Trash2, Upload,
-  Globe, Phone, FileText, Wrench
+  Globe, Phone, FileText, Wrench, ChevronDown, Bell, BarChart2, LayoutGrid, Star, Menu
 } from 'lucide-react';
 import './PartnerDashboard.css';
 
@@ -124,6 +124,7 @@ const initialPartnerBookings = [
 const PartnerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'fleet' | 'bookings' | 'payouts' | 'settings'
+  const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
 
   const [fleet, setFleet] = useState(initialPartnerFleet);
   const [bookings, setBookings] = useState(initialPartnerBookings);
@@ -185,8 +186,13 @@ const PartnerDashboard = () => {
 
   // New Ride / Rider Registration Modal State
   const [isNewRideModalOpen, setIsNewRideModalOpen] = useState(false);
+  const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
+  const [isVehicleDropdownOpen, setIsVehicleDropdownOpen] = useState(false);
+
   const [newRide, setNewRide] = useState({
+    riderEmail: '',
     riderName: '',
+    gender: 'Male',
     riderPhone: '',
     dlNumber: '',
     riderIdPhoto: '',
@@ -196,6 +202,36 @@ const PartnerDashboard = () => {
     paymentStatus: 'UPI Paid',
     securityDeposit: '2000'
   });
+
+  const openNewRideModal = () => {
+    const availableFleet = fleet.filter(f => f.status === 'Available');
+    const selectedV = availableFleet.find(f => f.id === newRide.vehicleId) || availableFleet[0] || fleet[0];
+
+    // Detect live current date & time and set return date to +24 hours
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const pickupNow = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+    const return24h = new Date(now.getTime() + (24 * 60 * 60 * 1000) - tzOffset).toISOString().slice(0, 16);
+
+    if (selectedV) {
+      setVehicleSearchQuery(`${selectedV.title} - ${selectedV.regNo}`);
+      setNewRide(prev => ({
+        ...prev,
+        vehicleId: selectedV.id,
+        pickupDate: pickupNow,
+        returnDate: return24h
+      }));
+    } else {
+      setVehicleSearchQuery('');
+      setNewRide(prev => ({
+        ...prev,
+        pickupDate: pickupNow,
+        returnDate: return24h
+      }));
+    }
+    setIsVehicleDropdownOpen(false);
+    setIsNewRideModalOpen(true);
+  };
 
   const handleRiderIdUpload = (e) => {
     const file = e.target.files[0];
@@ -278,24 +314,42 @@ const PartnerDashboard = () => {
 
   const handleRegisterNewRide = (e) => {
     e.preventDefault();
-    if (!newRide.riderName || !newRide.riderPhone || !newRide.dlNumber) {
-      showToast('Please enter Rider Name, Mobile Number, and Driving License Number.', 'error');
+    if (!newRide.riderEmail || !newRide.riderName || !newRide.riderPhone || !newRide.dlNumber || !newRide.riderIdPhoto) {
+      showToast('Please complete all mandatory fields (*), including Email Address & Document Upload.', 'error');
       return;
     }
 
     const selectedV = fleet.find(f => f.id === newRide.vehicleId) || fleet[0];
+
+    // Dynamic days computation based on pickup and return dates
+    let calcDays = 1;
+    if (newRide.pickupDate && newRide.returnDate) {
+      const pMs = new Date(newRide.pickupDate).getTime();
+      const rMs = new Date(newRide.returnDate).getTime();
+      if (!isNaN(pMs) && !isNaN(rMs) && rMs > pMs) {
+        const diffMs = rMs - pMs;
+        calcDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      }
+    }
+
+    const dailyRate = selectedV.price || 1500;
+    const computedTotalFare = calcDays * dailyRate;
+    const computedPartnerShare = Math.round(computedTotalFare * 0.85);
+    const finalReceivedAmount = newRide.amountReceived ? parseInt(newRide.amountReceived) : computedTotalFare;
+
     const createdBooking = {
       bookingId: `VR-${Math.floor(8000 + Math.random() * 1000)}`,
       vehicle: selectedV.title,
       renter: newRide.riderName,
+      email: newRide.riderEmail,
       phone: newRide.riderPhone || '+91 98765 00000',
-      dates: `${newRide.pickupDate.split('T')[0]} to ${newRide.returnDate.split('T')[0]}`,
+      dates: `${newRide.pickupDate.replace('T', ' ')} to ${newRide.returnDate.replace('T', ' ')}`,
       bookingMethod: 'Walk-in Entry',
-      totalFare: selectedV.price * 2,
-      partnerShare: Math.round(selectedV.price * 2 * 0.85),
+      totalFare: computedTotalFare,
+      partnerShare: computedPartnerShare,
       status: 'Active Trip',
       pickup: selectedV.location,
-      paymentStatus: newRide.paymentStatus || 'Cash at Counter',
+      paymentStatus: `${newRide.paymentStatus || '🟢 UPI Paid'} (Received: ₹${finalReceivedAmount.toLocaleString()})`,
       deposit: newRide.securityDeposit ? `₹${newRide.securityDeposit}` : '₹2,000'
     };
 
@@ -305,16 +359,21 @@ const PartnerDashboard = () => {
     setFleet(fleet.map(item => item.id === selectedV.id ? { ...item, status: 'Rented' } : item));
 
     setIsNewRideModalOpen(false);
-    showToast(`✅ New Ride Registered for ${newRide.riderName}! (ID: ${createdBooking.bookingId})`);
+    showToast(`✅ New Ride Registered & Payment Verified for ${newRide.riderName}! (ID: ${createdBooking.bookingId})`);
     setNewRide({
+      riderEmail: '',
       riderName: '',
+      gender: 'Male',
       riderPhone: '',
       dlNumber: '',
+      riderIdPhoto: '',
       vehicleId: 'PF-102',
-      pickupDate: '2026-07-31T10:00',
-      returnDate: '2026-08-02T18:00',
-      paymentStatus: 'UPI Paid',
-      securityDeposit: '2000'
+      pickupDate: '',
+      returnDate: '',
+      paymentStatus: '🟢 UPI Paid (Online / QR Code)',
+      amountReceived: '',
+      securityDeposit: '2000',
+      isPaymentConfirmed: true
     });
   };
 
@@ -430,11 +489,39 @@ const PartnerDashboard = () => {
 
   return (
     <div className="partner-dashboard-wrapper">
-      {/* Top Header Navbar */}
+      {/* Mobile Top Bar (Visible on Mobile <= 900px) */}
+      <div className="partner-mobile-top-bar">
+        <div className="pm-brand-wrap">
+          <div className="pm-avatar-circle">
+            {hostProfile.logo ? (
+              <img src={hostProfile.logo} alt="Host Logo" />
+            ) : (
+              <span>{hostProfile.name ? hostProfile.name.charAt(0).toUpperCase() : 'H'}</span>
+            )}
+          </div>
+          <Link
+            to="/partner/dashboard"
+            className="pm-brand-name"
+            onClick={() => setActiveTab('overview')}
+          >
+            <img src="/vahan-rentals-logo.png" alt="Vahan.Rentals Logo" style={{ height: '34px', width: 'auto', objectFit: 'contain' }} />
+          </Link>
+        </div>
+        <button type="button" className="pm-notif-btn" aria-label="Notifications">
+          <Bell size={20} />
+          <span className="pm-notif-dot"></span>
+        </button>
+      </div>
+
+      {/* Top Header Navbar (Desktop) */}
       <header className="partner-header">
         <div className="partner-header-left">
-          <Link to="/" className="partner-dash-brand">
-            vahan<span>.rentals</span>
+          <Link
+            to="/partner/dashboard"
+            className="partner-dash-brand"
+            onClick={() => setActiveTab('overview')}
+          >
+            <img src="/vahan-rentals-logo.png" alt="Vahan.Rentals Logo" style={{ height: '38px', width: 'auto', objectFit: 'contain' }} />
           </Link>
           <span className="partner-host-pill">
             <Handshake size={14} /> HOST PORTAL
@@ -465,7 +552,7 @@ const PartnerDashboard = () => {
 
       {/* Main Body Grid */}
       <div className="partner-dash-container">
-        {/* Sidebar Nav */}
+        {/* Sidebar Nav (Desktop) */}
         <aside className="partner-sidebar">
           <div className="partner-user-badge-card">
             <div className="partner-avatar-circle" style={{ overflow: 'hidden', padding: 0 }}>
@@ -534,20 +621,34 @@ const PartnerDashboard = () => {
 
         {/* Content Area */}
         <main className="partner-content-area">
+          {/* Mobile Host Banner */}
+          <div className="partner-mobile-host-banner">
+            <div className="pm-host-info">
+              <h3 className="pm-host-title">{hostProfile.name}</h3>
+              <p className="pm-host-sub">
+                ID: H-88210 • <CheckCircle2 size={13} className="text-emerald-bold inline-icon" /> <span className="text-emerald-bold">Verified</span>
+              </p>
+            </div>
+            <div className="pm-payout-info">
+              <span className="pm-payout-label">Monthly Payout</span>
+              <strong className="pm-payout-val">₹{(totalPartnerEarnings * 0.85).toLocaleString()}</strong>
+            </div>
+          </div>
+
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
               <div className="dash-title-row" style={{ flexWrap: 'wrap', gap: '16px' }}>
-                <div>
+                <div className="pm-dashboard-title-box">
                   <h2>Host Performance Dashboard</h2>
-                  <p>Track daily vehicle utilization, live bookings, and performance reports.</p>
+                  <p>Track daily vehicle utilization and live bookings.</p>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   {/* Date Report Picker Control */}
-                  <div className="report-date-picker-box">
+                  <div className="report-date-picker-box pm-date-picker-box">
                     <Calendar size={15} color="#059669" />
-                    <span className="report-date-label">Report Date:</span>
+                    <span className="report-date-label desktop-only">Report Date:</span>
                     <input
                       type="date"
                       value={selectedReportDate === 'all' ? '' : selectedReportDate}
@@ -570,21 +671,36 @@ const PartnerDashboard = () => {
                     </button>
                     <button
                       type="button"
-                      className={`btn-report-quick ${selectedReportDate === 'all' ? 'active' : ''}`}
+                      className={`btn-report-quick desktop-only ${selectedReportDate === 'all' ? 'active' : ''}`}
                       onClick={() => setSelectedReportDate('all')}
                     >
                       All Time
                     </button>
                   </div>
 
-                  <button className="btn btn-emerald" onClick={() => setIsNewRideModalOpen(true)}>
-                    <Plus size={18} /> Entry New Ride
+                  <button className="btn btn-emerald desktop-only" onClick={openNewRideModal}>
+                    <Plus size={18} /> Register New Rider / Walk-in
                   </button>
                 </div>
               </div>
 
+              {/* Performance Overview Accordion Button (Mobile) */}
+              <div className="pm-overview-accordion-box">
+                <button
+                  type="button"
+                  className="pm-accordion-toggle"
+                  onClick={() => setIsOverviewExpanded(!isOverviewExpanded)}
+                >
+                  <div className="pm-acc-left">
+                    <BarChart2 size={18} className="text-emerald" />
+                    <span>Performance Overview</span>
+                  </div>
+                  <ChevronDown size={18} className={`pm-chevron ${isOverviewExpanded ? 'expanded' : ''}`} />
+                </button>
+              </div>
+
               {/* KPI Stat Cards Grid (Daily Performance Metrics) */}
-              <div className="partner-kpi-grid">
+              <div className={`partner-kpi-grid ${isOverviewExpanded ? 'mobile-expanded' : ''}`}>
                 {/* Card 1: Today's Bookings */}
                 <div className="partner-kpi-card green">
                   <div className="kpi-icon-wrap green">
@@ -636,21 +752,31 @@ const PartnerDashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Booking Details Table */}
+              {/* Big Full-width Register Action Button (Mobile) */}
+              <div className="pm-register-btn-wrap mobile-only">
+                <button type="button" className="btn btn-emerald btn-mobile-register-full" onClick={openNewRideModal}>
+                  <Plus size={20} /> Register New Rider / Walk-in
+                </button>
+              </div>
+
+              {/* Recent Booking Details */}
               <div className="partner-card" style={{ marginTop: '20px' }}>
-                <div className="partner-card-header">
+                <div className="partner-card-header pm-recent-bookings-header">
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800' }}>
-                      Recent Booking Details {selectedReportDate === 'all' ? '(All Time)' : `(${selectedReportDate === '2026-08-05' ? 'Today' : selectedReportDate})`}
+                      Recent Bookings
                     </h3>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                    <p className="desktop-only" style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
                       Customer reservations via Web Portal & Counter Walk-in entries
                     </p>
                   </div>
-                  <button className="view-all-link" onClick={() => setActiveTab('bookings')}>View All Bookings ➔</button>
+                  <button className="view-all-link" onClick={() => setActiveTab('bookings')}>
+                    View All <ArrowUpRight size={14} />
+                  </button>
                 </div>
 
-                <div className="partner-table-wrap">
+                {/* Desktop Table View */}
+                <div className="partner-table-wrap desktop-only">
                   <table className="partner-table">
                     <thead>
                       <tr>
@@ -733,6 +859,92 @@ const PartnerDashboard = () => {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile Cards View */}
+                <div className="pm-bookings-cards-list mobile-only">
+                  {dateFilteredBookings.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                      No bookings found for {selectedReportDate}.
+                    </div>
+                  ) : (
+                    dateFilteredBookings.slice(0, 5).map((b, idx) => (
+                      <div className="pm-mobile-booking-card" key={b.bookingId || idx}>
+                        {/* Top Row: Ref & Method Pill */}
+                        <div className="pm-mbc-top">
+                          <div>
+                            <span className="pm-mbc-ref-label">BOOKING REF</span>
+                            <strong className="pm-mbc-ref-id">{b.bookingId}</strong>
+                          </div>
+                          <span className={`method-pill ${b.bookingMethod === 'Walk-in Entry' ? 'walkin' : 'web'}`}>
+                            {b.bookingMethod === 'Walk-in Entry' ? '🏃 Walk-in Entry' : '🌐 Web Booking'}
+                          </span>
+                        </div>
+
+                        {/* Renter Details */}
+                        <div className="pm-mbc-renter">
+                          <strong className="pm-mbc-name">{b.renter}</strong>
+                          <span className="pm-mbc-phone">{b.phone || '+91 98765 43210'}</span>
+                        </div>
+
+                        {/* Vehicle & Dates Grid Box */}
+                        <div className="pm-mbc-vehicle-dates">
+                          <div>
+                            <span className="pm-mbc-box-label">VEHICLE</span>
+                            <strong className="pm-mbc-vehicle-name">{b.vehicle}</strong>
+                          </div>
+                          <div>
+                            <span className="pm-mbc-box-label">DATES</span>
+                            <strong className="pm-mbc-dates-text">{b.dates}</strong>
+                          </div>
+                        </div>
+
+                        {/* Payout & Status Row */}
+                        <div className="pm-mbc-payout-status">
+                          <div>
+                            <span className="pm-mbc-payout-label">PAYOUT (85%)</span>
+                            <div className="pm-mbc-payout-amounts">
+                              <strong className="pm-mbc-payout-share">₹{b.partnerShare ? b.partnerShare.toLocaleString() : (b.totalFare * 0.85).toLocaleString()}</strong>
+                              <span className="pm-mbc-total-fare">₹{b.totalFare?.toLocaleString()}</span>
+                            </div>
+                          </div>
+
+                          <span className={`status-pill ${b.status === 'Pending' ? 'pending' : b.status === 'Active Trip' ? 'active-trip' : 'end-trip'}`}>
+                            {b.status === 'Pending' ? '⏳ Pending' : b.status === 'Active Trip' ? '⚡ Active Trip' : '🏁 End Trip'}
+                          </span>
+                        </div>
+
+                        {/* Action Buttons Row */}
+                        <div className="pm-mbc-actions">
+                          {b.status === 'Pending' && (
+                            <button
+                              type="button"
+                              className="btn-mobile-card-approve"
+                              onClick={() => updateBookingStatus(b.bookingId, 'Active Trip')}
+                            >
+                              ✓ Approve
+                            </button>
+                          )}
+                          {b.status === 'Active Trip' && (
+                            <button
+                              type="button"
+                              className="btn-mobile-card-end"
+                              onClick={() => updateBookingStatus(b.bookingId, 'End Trip')}
+                            >
+                              🏁 End Trip
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="btn-mobile-card-details"
+                            onClick={() => setSelectedBookingDetail(b)}
+                          >
+                            <Eye size={16} /> Details
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </motion.div>
           )}
@@ -745,12 +957,24 @@ const PartnerDashboard = () => {
                   <h2>Manage Listed Fleet ({fleet.length})</h2>
                   <p>Add new bikes/cars, update daily rental rates, and control live availability.</p>
                 </div>
-                <button className="btn btn-emerald" onClick={() => setIsSelectCategoryModalOpen(true)}>
+                <button className="btn btn-emerald desktop-only" onClick={() => setIsSelectCategoryModalOpen(true)}>
                   <Plus size={18} /> List New Vehicle
                 </button>
               </div>
 
-              <div className="partner-card">
+              {/* Big Full-width Register Button on Mobile */}
+              <div className="mobile-only pm-register-btn-wrap" style={{ margin: '12px 0 16px 0' }}>
+                <button
+                  type="button"
+                  className="btn btn-emerald btn-mobile-register-full"
+                  onClick={() => setIsSelectCategoryModalOpen(true)}
+                >
+                  <Plus size={20} /> List New Vehicle
+                </button>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="partner-card desktop-only">
                 <div className="partner-table-wrap">
                   <table className="partner-table fleet-management-table">
                     <thead>
@@ -772,7 +996,7 @@ const PartnerDashboard = () => {
                               <img src={v.image} alt={v.title} className="table-v-thumb-lg" />
                               <div>
                                 <strong className="v-title-name">{v.title}</strong>
-                                <span className="v-id-code">ID: {v.title.toLowerCase().replace(/\s+/g, '-')}</span>
+                                <span className="v-id-code">ID: {v.id || v.title.toLowerCase().replace(/\s+/g, '-')}</span>
                               </div>
                             </div>
                           </td>
@@ -789,7 +1013,7 @@ const PartnerDashboard = () => {
                             </div>
                           </td>
                           <td>
-                            <span className="v-loc-text">{v.location || 'Rishikesh, City'}</span>
+                            <span className="v-loc-text">{v.location || 'Tapovan Hub'}</span>
                           </td>
                           <td>
                             <span className={`status-pill ${v.status === 'Available' ? 'available' : v.status === 'Rented' ? 'active-trip' : 'maintenance'}`}>
@@ -833,6 +1057,78 @@ const PartnerDashboard = () => {
                   </table>
                 </div>
               </div>
+
+              {/* Mobile Vehicles Cards View (Exact Match to User Screenshot) */}
+              <div className="mobile-only pm-mobile-vehicles-list">
+                {fleet.map((v) => (
+                  <div className="pm-mobile-vehicle-card" key={v.id}>
+                    {/* Top Row: Thumbnail + Title + ID + Badges */}
+                    <div className="pm-mvc-top">
+                      <img src={v.image} alt={v.title} className="pm-mvc-thumb" />
+                      <div className="pm-mvc-info">
+                        <h4 className="pm-mvc-title">{v.title}</h4>
+                        <span className="pm-mvc-id">ID: {v.id || v.title.toLowerCase().replace(/\s+/g, '-')}</span>
+                        <div className="pm-mvc-badges">
+                          <span className="pm-mvc-type-pill">{v.category || 'Bike'}</span>
+                          <span className={`status-pill ${v.status === 'Available' ? 'available' : v.status === 'Rented' ? 'active-trip' : 'maintenance'}`}>
+                            {v.status === 'Available' ? 'Available' : v.status === 'Rented' ? 'Rented' : 'Maintenance'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Details Grid (Daily Rate, Location, Rating) */}
+                    <div className="pm-mvc-details-grid">
+                      <div>
+                        <span className="pm-mvc-label">Daily Rate</span>
+                        <strong className="pm-mvc-val-rate">₹{v.price}</strong>
+
+                        <span className="pm-mvc-label" style={{ marginTop: '8px' }}>Location</span>
+                        <strong className="pm-mvc-val-text">{v.location || 'Tapovan Hub'}</strong>
+                      </div>
+
+                      <div>
+                        <span className="pm-mvc-label">Rating</span>
+                        <strong className="pm-mvc-val-rating">
+                          <Star size={14} fill="#eab308" color="#eab308" /> {v.rating || '4.8'} <span className="pm-mvc-reviews-cnt">({v.reviews || '124'})</span>
+                        </strong>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Row */}
+                    <div className="pm-mvc-actions">
+                      <button
+                        type="button"
+                        className="btn-mvc-maintenance"
+                        onClick={() => handleMaintenanceClick(v)}
+                      >
+                        <Wrench size={15} /> {v.status === 'Under Maintenance' ? 'Mark Available' : 'Mark Maintenance'}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-mvc-icon-edit"
+                        onClick={() => {
+                          setNewVehicle({ ...v, itemType: v.category === 'Car' ? 'Car' : 'Bike' });
+                          setIsAddVehicleOpen(true);
+                        }}
+                        title="Edit Listing Details"
+                      >
+                        <Edit3 size={18} />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-mvc-icon-delete"
+                        onClick={() => setVehicleToDelete(v)}
+                        title="Delete Vehicle"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           )}
 
@@ -846,7 +1142,8 @@ const PartnerDashboard = () => {
                 </div>
               </div>
 
-              <div className="partner-card">
+              {/* Desktop Table View */}
+              <div className="partner-card desktop-only">
                 <div className="partner-table-wrap">
                   <table className="partner-table">
                     <thead>
@@ -924,6 +1221,86 @@ const PartnerDashboard = () => {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobile Booking Cards View (Exact Match to User Screenshot) */}
+              <div className="mobile-only pm-mobile-bookings-list">
+                {bookings.map((b, idx) => (
+                  <div className="pm-mobile-booking-card" key={b.bookingId || idx}>
+                    {/* Top Row: Ref & Method Pill */}
+                    <div className="pm-mbc-top">
+                      <div>
+                        <span className="pm-mbc-ref-label">BOOKING REF</span>
+                        <strong className="pm-mbc-ref-id">{b.bookingId}</strong>
+                      </div>
+                      <span className={`method-pill ${b.bookingMethod === 'Walk-in Entry' ? 'walkin' : 'web'}`}>
+                        {b.bookingMethod === 'Walk-in Entry' ? '🏃 Walk-in Entry' : '🌐 Web Booking'}
+                      </span>
+                    </div>
+
+                    {/* Renter Details */}
+                    <div className="pm-mbc-renter">
+                      <strong className="pm-mbc-name">{b.renter}</strong>
+                      <span className="pm-mbc-phone">{b.phone || '+91 98765 43210'}</span>
+                    </div>
+
+                    {/* Vehicle & Dates Grid Box */}
+                    <div className="pm-mbc-vehicle-dates">
+                      <div>
+                        <span className="pm-mbc-box-label">VEHICLE</span>
+                        <strong className="pm-mbc-vehicle-name">{b.vehicle}</strong>
+                      </div>
+                      <div>
+                        <span className="pm-mbc-box-label">DATES</span>
+                        <strong className="pm-mbc-dates-text">{b.dates}</strong>
+                      </div>
+                    </div>
+
+                    {/* Payout & Status Row */}
+                    <div className="pm-mbc-payout-status">
+                      <div>
+                        <span className="pm-mbc-payout-label">PAYOUT (85%)</span>
+                        <div className="pm-mbc-payout-amounts">
+                          <strong className="pm-mbc-payout-share">₹{b.partnerShare ? b.partnerShare.toLocaleString() : (b.totalFare * 0.85).toLocaleString()}</strong>
+                          <span className="pm-mbc-total-fare">₹{b.totalFare?.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <span className={`status-pill ${b.status === 'Pending' ? 'pending' : b.status === 'Active Trip' ? 'active-trip' : 'end-trip'}`}>
+                        {b.status === 'Pending' ? '⏳ Pending' : b.status === 'Active Trip' ? '⚡ Active Trip' : '🏁 End Trip'}
+                      </span>
+                    </div>
+
+                    {/* Action Buttons Row */}
+                    <div className="pm-mbc-actions">
+                      {b.status === 'Pending' && (
+                        <button
+                          type="button"
+                          className="btn-mobile-card-approve"
+                          onClick={() => updateBookingStatus(b.bookingId, 'Active Trip')}
+                        >
+                          ✓ Approve
+                        </button>
+                      )}
+                      {b.status === 'Active Trip' && (
+                        <button
+                          type="button"
+                          className="btn-mobile-card-end"
+                          onClick={() => updateBookingStatus(b.bookingId, 'End Trip')}
+                        >
+                          🏁 End Trip
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn-mobile-card-details"
+                        onClick={() => setSelectedBookingDetail(b)}
+                      >
+                        <Eye size={16} /> Details
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </motion.div>
           )}
@@ -1067,46 +1444,36 @@ const PartnerDashboard = () => {
 
                   <div className="settings-grid">
                     <div className="form-group">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={{ margin: 0 }}>Host / Agency Name</label>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                          🔒 Super Admin Managed
-                        </span>
-                      </div>
+                      <label>Host / Agency Name</label>
                       <input
                         type="text"
                         value={hostProfile.name}
-                        disabled
+                        disabled={true}
+                        readOnly={true}
                         style={{
-                          background: '#f1f5f9',
-                          color: '#475569',
+                          background: '#f8fafc',
+                          color: '#64748b',
                           cursor: 'not-allowed',
                           borderColor: '#cbd5e1',
                           fontWeight: '700'
                         }}
-                        title="Host Name can only be modified by Vahan Super Admin"
                       />
                     </div>
 
                     <div className="form-group">
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <label style={{ margin: 0 }}>Registered Phone Number</label>
-                        <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                          🔒 Super Admin Managed
-                        </span>
-                      </div>
+                      <label>Registered Phone Number</label>
                       <input
                         type="tel"
                         value={hostProfile.phone}
-                        disabled
+                        disabled={true}
+                        readOnly={true}
                         style={{
-                          background: '#f1f5f9',
-                          color: '#475569',
+                          background: '#f8fafc',
+                          color: '#64748b',
                           cursor: 'not-allowed',
                           borderColor: '#cbd5e1',
                           fontWeight: '700'
                         }}
-                        title="Registered Phone Number can only be modified by Vahan Super Admin"
                       />
                     </div>
 
@@ -1115,7 +1482,15 @@ const PartnerDashboard = () => {
                       <input
                         type="text"
                         value={hostProfile.hubLocation}
-                        onChange={(e) => setHostProfile({ ...hostProfile, hubLocation: e.target.value })}
+                        disabled={true}
+                        readOnly={true}
+                        style={{
+                          background: '#f8fafc',
+                          color: '#64748b',
+                          cursor: 'not-allowed',
+                          borderColor: '#cbd5e1',
+                          fontWeight: '700'
+                        }}
                       />
                     </div>
 
@@ -1158,27 +1533,27 @@ const PartnerDashboard = () => {
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
             >
               {/* Header */}
-              <div className="partner-modal-header" style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div className="partner-modal-header pm-modal-header-box">
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <h3 className="pm-modal-title">
                       Booking Details: {selectedBookingDetail.bookingId}
                     </h3>
                     <span className={`status-pill ${selectedBookingDetail.status === 'Pending' ? 'pending' : selectedBookingDetail.status === 'Active Trip' ? 'active-trip' : 'end-trip'}`}>
                       {selectedBookingDetail.status === 'Pending' ? '⏳ Pending' : selectedBookingDetail.status === 'Active Trip' ? '⚡ Active Trip' : '🏁 End Trip'}
                     </span>
                   </div>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.83rem', color: '#64748b' }}>
+                  <p className="pm-modal-subtitle">
                     Complete Renter Identity, Vehicle Assignment, Schedule & Financial Breakdown
                   </p>
                 </div>
-                <button onClick={() => setSelectedBookingDetail(null)} className="close-btn"><X size={20} /></button>
+                <button onClick={() => setSelectedBookingDetail(null)} className="close-btn" aria-label="Close modal"><X size={20} /></button>
               </div>
 
-              <div style={{ padding: '1.5rem', maxHeight: '78vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="pm-modal-content-scroll" style={{ padding: '1.5rem', maxHeight: '78vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                 {/* BOOKING METHOD BANNER */}
-                <div style={{
+                <div className="detail-source-banner" style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
@@ -1218,7 +1593,7 @@ const PartnerDashboard = () => {
                     Renter / Customer Identity Verification
                   </h4>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div className="detail-info-grid-3">
                     <div>
                       <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>RIDER FULL NAME</span>
                       <strong style={{ display: 'block', fontSize: '0.95rem', color: '#0f172a', marginTop: '2px' }}>
@@ -1282,7 +1657,7 @@ const PartnerDashboard = () => {
                     Assigned Vehicle & Rental Schedule
                   </h4>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div className="detail-info-grid-2">
                     <div>
                       <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>ASSIGNED VEHICLE</span>
                       <strong style={{ display: 'block', fontSize: '0.95rem', color: '#0f172a', marginTop: '2px' }}>
@@ -1325,7 +1700,7 @@ const PartnerDashboard = () => {
                     Payment Settlement & Security Deposit
                   </h4>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div className="detail-info-grid-2">
                     <div>
                       <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700' }}>PAYMENT STATUS & MODE</span>
                       <strong style={{ display: 'block', fontSize: '0.88rem', color: '#0f172a', marginTop: '2px' }}>
@@ -1342,7 +1717,7 @@ const PartnerDashboard = () => {
                   </div>
 
                   {/* Financial Summary Box */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '14px', background: '#ecfdf5', borderRadius: '12px', border: '1px solid #a7f3d0', marginTop: '0.85rem' }}>
+                  <div className="detail-payout-grid">
                     <div>
                       <span style={{ fontSize: '0.72rem', color: '#047857', fontWeight: '700' }}>TOTAL RENTAL FARE</span>
                       <strong style={{ display: 'block', fontSize: '1.15rem', color: '#065f46' }}>
@@ -1366,11 +1741,7 @@ const PartnerDashboard = () => {
                     Booking Status Lifecycle & Actions
                   </h4>
 
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '14px 16px',
+                  <div className="detail-lifecycle-box" style={{
                     borderRadius: '12px',
                     background: selectedBookingDetail.status === 'Pending' ? '#fffbeb' : selectedBookingDetail.status === 'Active Trip' ? '#eff6ff' : '#ecfdf5',
                     border: `1px solid ${selectedBookingDetail.status === 'Pending' ? '#fde68a' : selectedBookingDetail.status === 'Active Trip' ? '#bfdbfe' : '#a7f3d0'}`
@@ -1421,7 +1792,7 @@ const PartnerDashboard = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <div className="partner-modal-footer">
                   <button
                     className="btn btn-emerald"
                     onClick={() => setSelectedBookingDetail(null)}
@@ -1937,16 +2308,17 @@ const PartnerDashboard = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
             >
-              <div className="partner-modal-header" style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+              <div className="partner-modal-header pm-modal-header-box">
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Plus size={20} color="#059669" /> Register New Rider & Walk-in Ride Entry
+                  <h3 className="pm-modal-title">
+                    Register New Rider &<br className="mobile-only" /> Walk-in Ride Entry
                   </h3>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                    Register counter walk-in customers, record driving license details, and assign live fleet ride entries.
+                  <p className="pm-modal-subtitle">
+                    <Plus size={16} color="#059669" />
+                    <span>Register counter walk-in customers, record driving license details, and assign live fleet ride entries.</span>
                   </p>
                 </div>
-                <button onClick={() => setIsNewRideModalOpen(false)} className="close-btn"><X size={20} /></button>
+                <button onClick={() => setIsNewRideModalOpen(false)} className="close-btn" aria-label="Close modal"><X size={20} /></button>
               </div>
 
               <form onSubmit={handleRegisterNewRide} style={{ padding: '1.5rem', maxHeight: '78vh', overflowY: 'auto' }}>
@@ -1957,7 +2329,22 @@ const PartnerDashboard = () => {
                     Renter / Customer Identity Verification
                   </h4>
 
-                  <div className="form-grid-3">
+                  {/* Top Field: Mandatory Email Address */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      EMAIL ADDRESS / ID *
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="e.g. rider.customer@gmail.com"
+                      required
+                      value={newRide.riderEmail}
+                      onChange={(e) => setNewRide({ ...newRide, riderEmail: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Rider Name, Gender, Phone & DL Grid */}
+                  <div className="rider-info-grid" style={{ marginBottom: '1rem' }}>
                     <div className="form-group">
                       <label>RIDER FULL NAME *</label>
                       <input
@@ -1970,7 +2357,19 @@ const PartnerDashboard = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>MOBILE / WHATSAPP NUMBER *</label>
+                      <label>GENDER *</label>
+                      <select
+                        value={newRide.gender}
+                        onChange={(e) => setNewRide({ ...newRide, gender: e.target.value })}
+                      >
+                        <option value="Male">👨 Male</option>
+                        <option value="Female">👩 Female</option>
+                        <option value="Other">👤 Other</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>MOBILE / WHATSAPP *</label>
                       <input
                         type="tel"
                         placeholder="e.g. +91 98765 43210"
@@ -1981,10 +2380,10 @@ const PartnerDashboard = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>DRIVING LICENSE / GOVT ID NO. *</label>
+                      <label>DL / GOVT ID NO. *</label>
                       <input
                         type="text"
-                        placeholder="e.g. DL-0720230091827"
+                        placeholder="e.g. DL-072023009182"
                         required
                         value={newRide.dlNumber}
                         onChange={(e) => setNewRide({ ...newRide, dlNumber: e.target.value })}
@@ -1992,7 +2391,7 @@ const PartnerDashboard = () => {
                     </div>
                   </div>
 
-                  {/* DL / AADHAAR PHOTO UPLOAD BOX (Clean Device File Upload Only) */}
+                  {/* DL / AADHAAR PHOTO UPLOAD BOX */}
                   <div style={{ marginTop: '1rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
                     <label style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.88rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Upload size={18} color="#059669" /> Driving License / Aadhaar Card Photo Upload *
@@ -2066,29 +2465,188 @@ const PartnerDashboard = () => {
                     Assigned Vehicle & Rental Schedule
                   </h4>
 
-                  <div className="form-group" style={{ marginBottom: '1rem' }}>
-                    <label>SELECT ASSIGNED VEHICLE *</label>
-                    <select
-                      value={newRide.vehicleId}
-                      onChange={(e) => setNewRide({ ...newRide, vehicleId: e.target.value })}
-                      style={{ background: '#ffffff', color: '#0f172a', fontWeight: '700', borderColor: '#059669', width: '100%' }}
+                  {/* SEARCHABLE ASSIGNED VEHICLE COMBOBOX */}
+                  <div className="form-group" style={{ marginBottom: '1.25rem', position: 'relative' }}>
+                    <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontWeight: '700', color: '#0f172a', fontSize: '0.88rem' }}>
+                      <span>SELECT ASSIGNED VEHICLE *</span>
+                      <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700' }}>🔍 Type to Search Fleet</span>
+                    </label>
+
+                    {/* Input Container with Green Focus Border & Control Icons */}
+                    <div 
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: '#ffffff',
+                        border: isVehicleDropdownOpen ? '2px solid #10b981' : '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        boxShadow: isVehicleDropdownOpen ? '0 0 0 3px rgba(16, 185, 129, 0.15)' : 'none',
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      {fleet.map(f => (
-                        <option key={f.id} value={f.id}>
-                          {f.title} ({f.regNo}) - ₹{f.price}/day ({f.status})
-                        </option>
-                      ))}
-                    </select>
+                      <input
+                        type="text"
+                        placeholder="Type to search vehicle by name, reg no (e.g. Thar, UK07)..."
+                        value={vehicleSearchQuery}
+                        onFocus={() => setIsVehicleDropdownOpen(true)}
+                        onChange={(e) => {
+                          setVehicleSearchQuery(e.target.value);
+                          setIsVehicleDropdownOpen(true);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 2.8rem 0.75rem 1rem',
+                          border: 'none',
+                          outline: 'none',
+                          background: 'transparent',
+                          fontSize: '0.92rem',
+                          fontWeight: '700',
+                          color: '#0f172a'
+                        }}
+                      />
+
+                      {/* Right Control Icons: Clear X & Dropdown Chevron Arrow */}
+                      <div style={{ position: 'absolute', right: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {vehicleSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVehicleSearchQuery('');
+                              setNewRide(prev => ({ ...prev, vehicleId: '' }));
+                              setIsVehicleDropdownOpen(true);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: '#64748b',
+                              fontSize: '1rem',
+                              fontWeight: '700',
+                              padding: '2px 4px'
+                            }}
+                            title="Clear Selection"
+                          >
+                            ✕
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsVehicleDropdownOpen(!isVehicleDropdownOpen)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#475569',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <ChevronDown size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filtered Searchable Dropdown List Box */}
+                    {isVehicleDropdownOpen && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          marginTop: '4px',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '10px',
+                          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+                          zIndex: 100,
+                          maxHeight: '230px',
+                          overflowY: 'auto'
+                        }}
+                      >
+                        {fleet.filter(f => {
+                          if (f.status !== 'Available') return false;
+                          const query = vehicleSearchQuery.toLowerCase().trim();
+                          if (!query) return true;
+                          const label = `${f.title} ${f.regNo}`.toLowerCase();
+                          return label.includes(query);
+                        }).length === 0 ? (
+                          <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                            No available vehicles matching "{vehicleSearchQuery}" found in fleet.
+                          </div>
+                        ) : (
+                          fleet
+                            .filter(f => {
+                              if (f.status !== 'Available') return false;
+                              const query = vehicleSearchQuery.toLowerCase().trim();
+                              if (!query) return true;
+                              const label = `${f.title} ${f.regNo}`.toLowerCase();
+                              return label.includes(query);
+                            })
+                            .map(f => {
+                              const isSelected = newRide.vehicleId === f.id;
+                              const label = `${f.title} - ${f.regNo}`;
+
+                              return (
+                                <div
+                                  key={f.id}
+                                  onClick={() => {
+                                    setNewRide(prev => ({ ...prev, vehicleId: f.id }));
+                                    setVehicleSearchQuery(label);
+                                    setIsVehicleDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '0.75rem 1rem',
+                                    cursor: 'pointer',
+                                    fontSize: '0.88rem',
+                                    fontWeight: isSelected ? '700' : '600',
+                                    background: isSelected ? '#dcfce7' : '#ffffff',
+                                    color: isSelected ? '#065f46' : '#1e293b',
+                                    borderBottom: '1px solid #f1f5f9',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    transition: 'background 0.15s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.background = '#e6f4ea';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) e.currentTarget.style.background = '#ffffff';
+                                  }}
+                                >
+                                  <span>{label}</span>
+                                  {isSelected && <span style={{ color: '#059669', fontWeight: '800' }}>✓</span>}
+                                </div>
+                              );
+                            })
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="form-grid-2" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-grid-2">
                     <div className="form-group">
                       <label>PICKUP DATE & TIME *</label>
                       <input
                         type="datetime-local"
                         required
                         value={newRide.pickupDate}
-                        onChange={(e) => setNewRide({ ...newRide, pickupDate: e.target.value })}
+                        onChange={(e) => {
+                          const pVal = e.target.value;
+                          if (pVal) {
+                            const dt = new Date(pVal);
+                            if (!isNaN(dt.getTime())) {
+                              const retDt = new Date(dt.getTime() + (24 * 60 * 60 * 1000));
+                              const tzOffset = retDt.getTimezoneOffset() * 60000;
+                              const localISOReturn = new Date(retDt.getTime() - tzOffset).toISOString().slice(0, 16);
+                              setNewRide(prev => ({ ...prev, pickupDate: pVal, returnDate: localISOReturn }));
+                              return;
+                            }
+                          }
+                          setNewRide(prev => ({ ...prev, pickupDate: pVal }));
+                        }}
                       />
                     </div>
 
@@ -2111,40 +2669,105 @@ const PartnerDashboard = () => {
                     Payment Settlement & Security Deposit
                   </h4>
 
-                  <div className="form-grid-3">
-                    <div className="form-group">
-                      <label>PAYMENT METHOD & STATUS *</label>
-                      <select
-                        value={newRide.paymentStatus}
-                        onChange={(e) => setNewRide({ ...newRide, paymentStatus: e.target.value })}
-                      >
-                        <option value="UPI Paid">🟢 UPI Paid (Online / QR Code)</option>
-                        <option value="Collected Cash">💵 Cash Collected at Counter</option>
-                        <option value="Pending at Drop">⏳ Pay Balance at Vehicle Drop</option>
-                      </select>
-                    </div>
+                  {/* Live Dynamic Fare Settlement Calculation Summary Box */}
+                  {(() => {
+                    const selV = fleet.find(f => f.id === newRide.vehicleId);
+                    const dRate = selV ? (selV.price || 1500) : 1500;
+                    let daysCount = 1;
+                    if (newRide.pickupDate && newRide.returnDate) {
+                      const pMs = new Date(newRide.pickupDate).getTime();
+                      const rMs = new Date(newRide.returnDate).getTime();
+                      if (!isNaN(pMs) && !isNaN(rMs) && rMs > pMs) {
+                        const diffMs = rMs - pMs;
+                        daysCount = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                      }
+                    }
+                    const totalRentalFare = daysCount * dRate;
+                    const hostShare = Math.round(totalRentalFare * 0.85);
 
-                    <div className="form-group">
-                      <label>SECURITY DEPOSIT COLLECTED (₹)</label>
-                      <input
-                        type="number"
-                        placeholder="e.g. 2000"
-                        value={newRide.securityDeposit}
-                        onChange={(e) => setNewRide({ ...newRide, securityDeposit: e.target.value })}
-                      />
-                    </div>
+                    return (
+                      <>
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1.15rem', marginBottom: '1.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Wallet size={18} color="#059669" />
+                              <strong style={{ fontSize: '0.94rem', color: '#065f46' }}>Automated Fare Calculation & Settlement</strong>
+                            </div>
+                            <span style={{ background: '#dcfce7', color: '#15803d', fontSize: '0.78rem', fontWeight: '800', padding: '3px 10px', borderRadius: '6px' }}>
+                              {daysCount} {daysCount === 1 ? 'Day' : 'Days'} Duration
+                            </span>
+                          </div>
 
-                    <div className="form-group">
-                      <label>HOST PICKUP HUB LOCATION</label>
-                      <input
-                        type="text"
-                        value="Tapovan Rishikesh Hub (Main Counter)"
-                        disabled={true}
-                        readOnly={true}
-                        style={{ background: '#f1f5f9', cursor: 'not-allowed', fontWeight: '700' }}
-                      />
-                    </div>
-                  </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', background: '#ffffff', padding: '0.85rem 1rem', borderRadius: '10px', border: '1px solid #dcfce7' }}>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', display: 'block' }}>DAILY RATE</span>
+                              <strong style={{ fontSize: '0.98rem', color: '#0f172a', fontWeight: '800' }}>₹{dRate.toLocaleString()} / day</strong>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', display: 'block' }}>TOTAL FARE ({daysCount} d)</span>
+                              <strong style={{ fontSize: '1.1rem', color: '#047857', fontWeight: '900' }}>₹{totalRentalFare.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', display: 'block' }}>HOST SHARE (85%)</span>
+                              <strong style={{ fontSize: '1.05rem', color: '#065f46', fontWeight: '900' }}>₹{hostShare.toLocaleString()}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="form-grid-3">
+                          <div className="form-group">
+                            <label>PAYMENT METHOD & STATUS *</label>
+                            <select
+                              value={newRide.paymentStatus}
+                              onChange={(e) => setNewRide({ ...newRide, paymentStatus: e.target.value })}
+                            >
+                              <option value="🟢 UPI Paid">🟢 UPI Paid (Online / QR Code)</option>
+                              <option value="💵 Cash Collected">💵 Cash Collected at Counter</option>
+                              <option value="⏳ Pay Balance at Drop">⏳ Pay Balance at Vehicle Drop</option>
+                            </select>
+                          </div>
+
+                          <div className="form-group">
+                            <label>PAYMENT AMOUNT RECEIVED (₹) *</label>
+                            <input
+                              type="number"
+                              required
+                              placeholder={`e.g. ${totalRentalFare}`}
+                              value={newRide.amountReceived !== undefined && newRide.amountReceived !== '' ? newRide.amountReceived : totalRentalFare}
+                              onChange={(e) => setNewRide({ ...newRide, amountReceived: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="form-group">
+                            <label>SECURITY DEPOSIT COLLECTED (₹)</label>
+                            <input
+                              type="number"
+                              placeholder="e.g. 2000"
+                              value={newRide.securityDeposit}
+                              onChange={(e) => setNewRide({ ...newRide, securityDeposit: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Payment Received Confirmation Verification Banner */}
+                        <div style={{ marginTop: '1rem', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '1rem' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', fontWeight: '700', color: '#0f172a', fontSize: '0.88rem' }}>
+                            <input
+                              type="checkbox"
+                              required
+                              checked={newRide.isPaymentConfirmed !== false}
+                              onChange={(e) => setNewRide({ ...newRide, isPaymentConfirmed: e.target.checked })}
+                              style={{ width: '18px', height: '18px', accentColor: '#059669', cursor: 'pointer' }}
+                            />
+                            <span>✓ Confirm Payment Received & Counter Verification Completed</span>
+                          </label>
+                          <p style={{ margin: '0.35rem 0 0 1.8rem', fontSize: '0.76rem', color: '#64748b' }}>
+                            Counter Agent / Host confirms that payment of ₹{(newRide.amountReceived !== undefined && newRide.amountReceived !== '' ? parseInt(newRide.amountReceived) : totalRentalFare).toLocaleString()} has been received & verified for this counter booking.
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* MODAL FOOTER ACTIONS */}
@@ -2152,8 +2775,8 @@ const PartnerDashboard = () => {
                   <button type="button" className="btn btn-outline" onClick={() => setIsNewRideModalOpen(false)}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-emerald" style={{ padding: '0.75rem 1.75rem', fontWeight: '800' }}>
-                    ✅ Confirm & Register Ride
+                  <button type="submit" className="btn btn-emerald btn-confirm-ride">
+                    <CheckCircle2 size={18} /> Confirm & Register Ride
                   </button>
                 </div>
               </form>
@@ -2348,6 +2971,64 @@ const PartnerDashboard = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation Bar (Visible on Mobile <= 900px) */}
+      <div className="partner-mobile-bottom-nav">
+        <button
+          type="button"
+          className={`pm-nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          <div className="pm-icon-wrap">
+            <LayoutGrid size={20} />
+          </div>
+          <span>Overview</span>
+        </button>
+
+        <button
+          type="button"
+          className={`pm-nav-item ${activeTab === 'fleet' ? 'active' : ''}`}
+          onClick={() => setActiveTab('fleet')}
+        >
+          <div className="pm-icon-wrap">
+            <Bike size={20} />
+          </div>
+          <span>Vehicles</span>
+        </button>
+
+        <button
+          type="button"
+          className={`pm-nav-item ${activeTab === 'bookings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bookings')}
+        >
+          <div className="pm-icon-wrap">
+            <Calendar size={20} />
+          </div>
+          <span>Bookings</span>
+        </button>
+
+        <button
+          type="button"
+          className={`pm-nav-item ${activeTab === 'payouts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('payouts')}
+        >
+          <div className="pm-icon-wrap">
+            <Wallet size={20} />
+          </div>
+          <span>Earnings</span>
+        </button>
+
+        <button
+          type="button"
+          className={`pm-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          <div className="pm-icon-wrap">
+            <Settings size={20} />
+          </div>
+          <span>Settings</span>
+        </button>
+      </div>
 
     </div>
   );

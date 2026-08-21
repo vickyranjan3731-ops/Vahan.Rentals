@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import Section from '../components/Section';
 import HowItWorks from '../components/HowItWorks';
 import Callback from '../components/Callback';
+import GeoSeoHub from '../components/GeoSeoHub';
 import { bikeData, carData, experienceData } from '../data';
 
 const Home = () => {
@@ -28,9 +29,10 @@ const Home = () => {
         title={<>Popular Experiences in <span>Rishikesh</span></>} 
         subtitle="Make your trip more memorable." 
         items={experienceData} 
-        viewAllLink="/experiences"
+        viewAllLink="https://mountainflashes.com/"
       />
       <HowItWorks />
+      <GeoSeoHub />
       <Callback />
     </>
   );

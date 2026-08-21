@@ -110,7 +110,7 @@ const Header = () => {
           </button>
 
           <Link to="/" className="logo" onClick={() => setIsMobileMenuOpen(false)}>
-            <span className="logo-text">vahan.rentals</span>
+            <img src="/vahan-rentals-logo.png" alt="Vahan.Rentals Logo" className="brand-logo-img" style={{ height: '48px', width: 'auto', objectFit: 'contain' }} />
           </Link>
           
           {/* Category Navigation */}

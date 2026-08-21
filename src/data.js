@@ -32,18 +32,48 @@ export const bikeData = [
       'Free hotel delivery (Rishikesh)',
       'Saddlebag on request'
     ],
+    comparisonWith: {
+      alternativeTitle: 'Royal Enfield Himalayan 411',
+      vsLabel: 'Classic 350 vs Himalayan 411',
+      winnerFor: 'Comfortable Long Highway Cruising & Smooth City Rides',
+      alternativeWinnerFor: 'Extreme Off-Roading & Steep Mountain Inclines (Chopta/Auli)',
+      summary: 'Choose Classic 350 if you want an effortless iconic thump with lower seat height for Rishikesh, Mussoorie, & Haridwar. Choose Himalayan if you are tackling unpaved mountain trails.'
+    },
+    expertTip: {
+      author: 'Vikram Singh',
+      role: 'Head Mechanic & Fleet Inspector (Vahan Rentals Rishikesh)',
+      quote: 'The J-series engine in Classic 350 has near zero vibration compared to older UCE models. For mountain twists around Rishikesh to Mussoorie, keep tire pressure at 32 PSI rear and maintain 3rd gear on 15% gradients for maximum torque without engine strain.'
+    },
+    realStory: {
+      author: 'Arjun M., New Delhi',
+      tripRoute: 'Delhi → Rishikesh → Tehri Dam → Laxman Jhula (4-Day Weekend Tour)',
+      testimonial: 'Rented the Classic 350 from Vahan Rentals near Rishikesh station. Delivered directly to my hotel in Tapovan within 20 mins. Took it up to Tehri Dam lake view point — smoothest highway ride ever! 38 kmpl mileage recorded.'
+    },
+    useCases: [
+      'Scenic Highway Riding (Rishikesh to Dehradun / Mussoorie)',
+      'Solo & Pillions Heritage Temple Tours (Triveni Ghat, Neelkanth Mahadev)',
+      'Weekend Leisure Rides for Delhi/NCR Travelers'
+    ],
     faqs: [
       {
-        question: 'What documents are required to rent?',
-        answer: 'A valid driving license (with motorcycle endorsement), government-issued ID (Aadhar/Passport), and a security deposit are required.'
+        question: 'What documents are required to rent a Royal Enfield Classic 350 in Rishikesh?',
+        answer: 'A valid original Driving License (Motorcycle with Gear), Aadhar Card or Passport, and a refundable security deposit of ₹1,000 to ₹2,000 are required upon handover.'
       },
       {
-        question: 'Can I take the bike to other states like Himachal?',
-        answer: 'Yes! Inter-state travel is allowed with prior intimation. Additional charges may apply.'
+        question: 'Is Royal Enfield Classic 350 good for Rishikesh to Mussoorie mountain ride?',
+        answer: 'Yes! The Classic 350 is excellent for the Rishikesh-Mussoorie route. Its 349cc J-series engine produces 27 Nm torque at low RPM, making steep inclines easy and comfortable for both rider and pillion.'
       },
       {
-        question: 'What if the bike breaks down?',
-        answer: 'We provide 24/7 roadside assistance. In case of a mechanical breakdown not caused by the rider, we will repair or replace the bike at no extra cost.'
+        question: 'What is the fuel mileage of Classic 350 on mountain roads?',
+        answer: 'Expect around 33-37 km/l on mountain roads in Uttarakhand and up to 40 km/l on flat national highways when driving around 60-70 km/h.'
+      },
+      {
+        question: 'Can I take the bike to other states like Himachal Pradesh or UP?',
+        answer: 'Yes! All Vahan Rentals vehicles carry valid commercial tourist permits and pan-India insurance. Just inform our desk before trip start.'
+      },
+      {
+        question: 'What happens in case of a breakdown near Shivpuri or Devprayag?',
+        answer: 'Vahan Rentals provides 24/7 roadside assistance across Uttarakhand. If repair takes over 45 minutes, we dispatch a replacement bike or mechanic directly to your location.'
       }
     ]
   },
@@ -79,18 +109,40 @@ export const bikeData = [
       'Fully insured vehicle',
       'Free hotel delivery (Rishikesh)'
     ],
+    comparisonWith: {
+      alternativeTitle: 'TVS Jupiter 125',
+      vsLabel: 'Honda Activa 6G vs TVS Jupiter',
+      winnerFor: 'Low Fuel Consumption, Reliability & Easy Tapovan Traffic Handling',
+      alternativeWinnerFor: 'Under-seat Storage Space',
+      summary: 'Activa 6G is the gold standard for daily rentals in Rishikesh due to its low maintenance, telescopic front suspension, and smooth automatic transmission for beginners.'
+    },
+    expertTip: {
+      author: 'Deepak Rawat',
+      role: 'Fleet Manager (Tapovan Desk)',
+      quote: 'Activa 6G is ideal for 0-35 km radius around Rishikesh (Tapovan, Ram Jhula, Laxman Jhula, Shivpuri, Haridwar). For steep hill climbs like Neelkanth or Mussoorie with 2 heavy adults, we recommend upgrading to a 125cc scooter or 350cc motorcycle.'
+    },
+    realStory: {
+      author: 'Sneha & Priya, Mumbai',
+      tripRoute: 'Tapovan → Beatles Ashram → Ganga Aarti at Triveni Ghat → Neer Garh Waterfall',
+      testimonial: 'Rented Activa 6G for 3 days. Super convenient parking near Ram Jhula bridge where cars get stuck. Only spent ₹250 on petrol for the entire 3 days!'
+    },
+    useCases: [
+      'Rishikesh Cafe Hopping & Yoga Retreat Commutes',
+      'Local Market & Ghat Visits (Ram Jhula, Laxman Jhula, Triveni Ghat)',
+      'Budget Solo & Couples Sightseeing in Rishikesh & Haridwar'
+    ],
     faqs: [
       {
-        question: 'What documents are required to rent?',
-        answer: 'A valid driving license, government-issued ID (Aadhar/Passport), and a security deposit are required.'
+        question: 'What is the rental price of Honda Activa 6G in Rishikesh?',
+        answer: 'The daily rental rate for Honda Activa 6G starts at ₹500/day, weekly packages start at ₹3,000/week, and monthly rentals at ₹10,000/month with zero hidden charges.'
       },
       {
-        question: 'Can I take the scooty outside Rishikesh?',
-        answer: 'Scooters are best for local commutes within a 30-50 km radius. Long-distance mountain travel is not recommended.'
+        question: 'Is Activa 6G suitable for riding to Shivpuri or Vashishta Gufa?',
+        answer: 'Yes! Activa 6G handles the highway ride along the Ganges river bed to Shivpuri and Vashishta Gufa (up to 25 km) smoothly and effortlessly.'
       },
       {
-        question: 'What if the scooty breaks down?',
-        answer: 'We provide 24/7 roadside assistance. In case of a mechanical breakdown not caused by the rider, we will repair or replace the scooty at no extra cost.'
+        question: 'Is helmet included with scooty rental in Rishikesh?',
+        answer: 'Yes, 1 main ISI-certified helmet is complimentary with every scooty rental. An extra helmet for pillion rider is available for ₹50/day.'
       }
     ]
   },
@@ -127,18 +179,40 @@ export const bikeData = [
       'Free hotel delivery (Rishikesh)',
       'Saddlebag on request'
     ],
+    comparisonWith: {
+      alternativeTitle: 'KTM Adventure 390',
+      vsLabel: 'RE Himalayan 411 vs KTM Adventure 390',
+      winnerFor: 'Low-end Torque, Long Ride Comfort & Luggage Mounting Capability',
+      alternativeWinnerFor: 'High-speed Highway Acceleration',
+      summary: 'The RE Himalayan is far superior for high altitude off-roading, bad patches, water crossings, and multi-day expedition tours due to soft suspension tuning and upright ergonomic geometry.'
+    },
+    expertTip: {
+      author: 'Suraj Negi',
+      role: 'Lead Tour Escort & Expeditions Guide',
+      quote: 'If riding to Chopta, Badrinath or Spiti from Rishikesh, Himalayan 411 is the #1 choice. Always check chain slack before ascending above 2,500m altitude. The 220mm ground clearance prevents underbody hits even on unpaved gravel trails.'
+    },
+    realStory: {
+      author: 'Rohit K., Bengaluru',
+      tripRoute: 'Rishikesh → Devprayag → Rudraprayag → Chopta Tungnath → Rishikesh (6-Day Circuit)',
+      testimonial: 'Rented Himalayan 411 from Vahan Rentals for our Chopta expedition. The bike was thoroughly serviced with fresh oil & brake pads. Covered 680 KM across elevation spikes without a single hitch. Top notch service!'
+    },
+    useCases: [
+      'High-Altitude Himalayan Expeditions (Chopta, Tungnath, Auli, Mana)',
+      'Char Dham Yatra Circuit (Yamunotri, Gangotri, Kedarnath, Badrinath)',
+      'Off-Road & Unpaved Mountain Passes in Garhwal Region'
+    ],
     faqs: [
       {
-        question: 'What documents are required to rent?',
-        answer: 'A valid driving license (with motorcycle endorsement), government-issued ID (Aadhar/Passport), and a security deposit of ₹2,000 are required.'
+        question: 'Can I ride RE Himalayan to Kedarnath and Badrinath from Rishikesh?',
+        answer: 'Yes! RE Himalayan 411 is specifically engineered for Char Dham routes. It easily navigates the mountain hairpins, loose gravel, and high elevation climbs up to Sonprayag and Badrinath.'
       },
       {
-        question: 'Can I take the bike to other states like Himachal?',
-        answer: 'Yes! Inter-state travel is allowed within Uttarakhand, Himachal Pradesh, and Delhi NCR with prior intimation. Additional charges may apply.'
+        question: 'Are saddle stay and luggage carriers mounted on the rental Himalayan?',
+        answer: 'Yes, all our Himalayan adventure bikes come equipped with heavy-duty luggage racks and optional waterproof saddlebags at no extra fee.'
       },
       {
-        question: 'What if the bike breaks down?',
-        answer: 'We provide 24/7 roadside assistance. In case of a mechanical breakdown not caused by the rider, we will repair or replace the bike at no extra cost.'
+        question: 'What security deposit is required for RE Himalayan?',
+        answer: 'A refundable deposit of ₹2,000 is held at pickup and returned immediately upon bike return after vehicle condition check.'
       }
     ]
   },

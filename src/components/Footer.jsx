@@ -9,8 +9,8 @@ const Footer = () => {
       <div className="container footer-container">
         
         <div className="footer-brand">
-          <Link to="/" style={{ textDecoration: 'none' }}>
-            <div className="logo-text footer-logo">vahan.rentals</div>
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '0.75rem' }}>
+            <img src="/vahan-rentals-logo.png" alt="Vahan.Rentals Logo" className="footer-logo-img" />
           </Link>
           <p className="footer-desc">
             The largest fleet of vehicles in Rishikesh and Dehradun. 

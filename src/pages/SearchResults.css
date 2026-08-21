@@ -7,8 +7,9 @@
 
 /* Header Hero Section */
 .search-header-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  color: #ffffff;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
   padding: 3.5rem 0 4rem;
   position: relative;
   overflow: hidden;
@@ -21,7 +22,7 @@
   right: -20%;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 152, 0, 0.08) 0%, rgba(255, 152, 0, 0) 70%);
   pointer-events: none;
 }
 
@@ -34,14 +35,14 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
+  background: rgba(255, 152, 0, 0.12);
+  color: #d97706;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   padding: 0.35rem 0.85rem;
   border-radius: 50px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(255, 152, 0, 0.3);
   margin-bottom: 1rem;
 }
 
@@ -50,14 +51,15 @@
   font-weight: 800;
   line-height: 1.25;
   margin-bottom: 0.5rem;
+  color: #0f172a;
 }
 
 .highlight-text {
-  color: #f59e0b;
+  color: var(--primary-color, #ff9800);
 }
 
 .search-header-text p {
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.05rem;
 }
 
@@ -69,8 +71,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
 }
 
 .refine-field {
@@ -110,8 +112,8 @@
 }
 
 .refine-submit-btn {
-  background: #f59e0b;
-  color: #ffffff;
+  background: var(--primary-color, #ff9800);
+  color: #1a1a1a;
   border: none;
   padding: 0.85rem 1.6rem;
   border-radius: 12px;
@@ -126,7 +128,7 @@
 }
 
 .refine-submit-btn:hover {
-  background: #d97706;
+  background: var(--primary-hover, #e68900);
   transform: translateY(-1px);
 }
 
@@ -185,12 +187,14 @@
 }
 
 .cat-tab.active {
-  background: #0f172a;
-  color: #ffffff;
+  background: var(--primary-color, #ff9800);
+  color: #1a1a1a;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.25);
 }
 
 .count-pill {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.1);
   color: inherit;
   font-size: 0.75rem;
   padding: 0.15rem 0.5rem;

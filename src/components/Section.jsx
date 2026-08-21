@@ -46,7 +46,11 @@ const Section = ({ badge, title, subtitle, items, viewAllLink }) => {
 
         {viewAllLink && (
           <div className="view-all-wrapper">
-            <a href={viewAllLink} className="btn btn-outline view-all-btn">
+            <a 
+              href={viewAllLink} 
+              className="btn btn-outline view-all-btn"
+              {...(viewAllLink.startsWith('http') ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
               View More →
             </a>
           </div>

@@ -1,12 +1,11 @@
 import React from 'react';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import Callback from '../components/Callback';
 import CarsHero from '../components/CarsHero';
 import CarListingSection from '../components/CarListingSection';
 import ScenicFeature from '../components/ScenicFeature';
 import FleetStandards from '../components/FleetStandards';
 import CabAdvantages from '../components/CabAdvantages';
+import CarGeoSeoHub from '../components/CarGeoSeoHub';
 import AppFeature from '../components/AppFeature';
 
 const Cars = () => {
@@ -18,6 +17,7 @@ const Cars = () => {
         <ScenicFeature />
         <FleetStandards />
         <CabAdvantages />
+        <CarGeoSeoHub />
         <AppFeature />
       </div>
       <Callback />

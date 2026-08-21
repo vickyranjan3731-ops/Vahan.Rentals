@@ -19,8 +19,8 @@ const initialPartnersData = [
 ];
 
 const initialBookings = [
-  { id: 'VR-1092', customer: 'Rahul Verma', vehicle: 'Royal Enfield Himalayan 450', type: 'Bike', dates: '18 Jul - 20 Jul 2026', price: '₹3,000', status: 'Confirmed', location: 'Tapovan Rishikesh' },
-  { id: 'VR-1093', customer: 'Ananya Roy', vehicle: 'Mahindra Thar 4x4 Hard Top', type: 'Car', dates: '19 Jul - 22 Jul 2026', price: '₹13,500', status: 'Confirmed', location: 'Dehradun Airport' },
+  { id: 'VR-1092', customer: 'Rahul Verma', vehicle: 'Royal Enfield Himalayan 450', type: 'Bike', dates: '18 Jul - 20 Jul 2026', price: '₹3,000', status: 'Pending', location: 'Tapovan Rishikesh' },
+  { id: 'VR-1093', customer: 'Ananya Roy', vehicle: 'Mahindra Thar 4x4 Hard Top', type: 'Car', dates: '19 Jul - 22 Jul 2026', price: '₹13,500', status: 'Active Trip', location: 'Dehradun Airport' },
   { id: 'VR-1094', customer: 'Vikram Seth', vehicle: 'White Water Rafting (Shivpuri)', type: 'Experience', dates: '18 Jul 2026', price: '₹2,400', status: 'Completed', location: 'Shivpuri' },
   { id: 'VR-1095', customer: 'Suresh Kumar', vehicle: 'Honda Activa 6G', type: 'Bike', dates: '20 Jul - 21 Jul 2026', price: '₹1,000', status: 'Pending', location: 'Laxman Jhula' },
   { id: 'VR-1096', customer: 'Neha Sharma', vehicle: 'Toyota Innova Crysta', type: 'Car', dates: '21 Jul - 25 Jul 2026', price: '₹18,000', status: 'Confirmed', location: 'Rishikesh Station' },
@@ -112,6 +112,9 @@ const Admin = () => {
   // Selected Booking Details Review Modal State
   const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
   const [modalBookingStatus, setModalBookingStatus] = useState('');
+
+  // Selected Partner Details Modal State
+  const [selectedPartnerDetails, setSelectedPartnerDetails] = useState(null);
 
   const handleOpenBookingModal = (booking) => {
     setSelectedBookingDetails(booking);
@@ -336,6 +339,97 @@ const Admin = () => {
     return matchesSearch && matchesCategory;
   });
 
+  // Status Badge Renderer matching design screenshot
+  const renderStatusBadge = (status) => {
+    switch (status) {
+      case 'Pending':
+      case 'Pending Approval':
+      case 'Pending Review':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 14px', borderRadius: '100px', background: '#fef9c3', border: '1px solid #fde047', color: '#a16207', fontWeight: '700', fontSize: '0.82rem' }}>
+            ⏳ Pending
+          </span>
+        );
+      case 'Active Trip':
+      case 'Active':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '12px', background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontWeight: '700', fontSize: '0.82rem', lineHeight: '1.2' }}>
+            ⚡ Active Trip
+          </span>
+        );
+      case 'Confirmed':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 14px', borderRadius: '100px', background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', fontWeight: '700', fontSize: '0.82rem' }}>
+            🟢 Confirmed
+          </span>
+        );
+      case 'Active Verified':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 14px', borderRadius: '100px', background: '#dcfce7', border: '1px solid #86efac', color: '#15803d', fontWeight: '700', fontSize: '0.82rem' }}>
+            🟢 Active Verified
+          </span>
+        );
+      case 'Completed':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 14px', borderRadius: '100px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontWeight: '700', fontSize: '0.82rem' }}>
+            ✅ Completed
+          </span>
+        );
+      case 'Cancelled':
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 14px', borderRadius: '100px', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: '700', fontSize: '0.82rem' }}>
+            ❌ Cancelled
+          </span>
+        );
+      default:
+        return (
+          <span className="status-pill info">
+            {status}
+          </span>
+        );
+    }
+  };
+
+  // Booking Table Action Buttons Renderer matching design screenshot
+  const renderBookingActions = (b) => {
+    const isPending = b.status === 'Pending' || b.status === 'Pending Approval';
+    const isActive = b.status === 'Active Trip' || b.status === 'Confirmed';
+    
+    return (
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        {isPending && (
+          <button 
+            type="button" 
+            className="btn"
+            style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', background: '#ecfdf5', border: '1px solid #6ee7b7', color: '#047857', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px', cursor: 'pointer' }}
+            onClick={() => handleUpdateBookingStatus(b.id || b.bookingId, 'Confirmed')}
+          >
+            ✓ Approve
+          </button>
+        )}
+        {isActive && (
+          <button 
+            type="button" 
+            className="btn"
+            style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderRadius: '8px', cursor: 'pointer' }}
+            onClick={() => handleUpdateBookingStatus(b.id || b.bookingId, 'Completed')}
+          >
+            🏁 End Trip
+          </button>
+        )}
+        <button 
+          type="button"
+          className="btn btn-outline" 
+          style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          onClick={() => handleOpenBookingModal(b)}
+          title="Open Details & Action Form"
+        >
+          <Eye size={13} /> Details
+        </button>
+      </div>
+    );
+  };
+
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -346,7 +440,7 @@ const Admin = () => {
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header">
           <Link to="/admin/dashboard" className="admin-brand" onClick={() => setActiveTab('dashboard')}>
-            vahan<span>.rentals</span>
+            <img src="/vahan-rentals-logo.png" alt="Vahan.Rentals Logo" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
           </Link>
           <span className="admin-badge">ADMIN</span>
         </div>
@@ -561,20 +655,10 @@ const Admin = () => {
                           <td>{b.dates}</td>
                           <td><strong>{b.price}</strong></td>
                           <td>
-                            <span className={`status-pill ${b.status === 'Confirmed' ? 'success' : b.status === 'Pending' ? 'warning' : 'info'}`}>
-                              {b.status}
-                            </span>
+                            {renderStatusBadge(b.status)}
                           </td>
                           <td>
-                            <button 
-                              type="button"
-                              className="btn btn-outline" 
-                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => handleOpenBookingModal(b)}
-                              title="Open Full Details & Verification Form"
-                            >
-                              <Eye size={13} /> Review & Action
-                            </button>
+                            {renderBookingActions(b)}
                           </td>
                         </tr>
                       ))}
@@ -755,20 +839,10 @@ const Admin = () => {
                           <td>{b.location}</td>
                           <td><strong>{b.price}</strong></td>
                           <td>
-                            <span className={`status-pill ${b.status === 'Confirmed' ? 'success' : b.status === 'Pending' ? 'warning' : 'info'}`}>
-                              {b.status}
-                            </span>
+                            {renderStatusBadge(b.status)}
                           </td>
                           <td>
-                            <button 
-                              type="button"
-                              className="btn btn-outline" 
-                              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              onClick={() => handleOpenBookingModal(b)}
-                              title="Open Full Details & Verification Form"
-                            >
-                              <Eye size={13} /> Review Details & Action
-                            </button>
+                            {renderBookingActions(b)}
                           </td>
                         </tr>
                       ))}
@@ -970,44 +1044,48 @@ const Admin = () => {
               </div>
 
               {/* Partner Overview Stats */}
-              <div className="admin-stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
-                <div className="stat-card">
-                  <div className="stat-icon" style={{ background: '#ecfdf5', color: '#059669' }}>
-                    <Handshake size={22} />
-                  </div>
+              <div className="admin-stats-grid">
+                <div className="admin-stat-card">
                   <div>
-                    <span className="stat-label">Active Host Partners</span>
-                    <h3 className="stat-value">{partnersList.filter(p => p.status === 'Active Verified').length} Hosts</h3>
+                    <div className="stat-info-title">Active Host Partners</div>
+                    <div className="stat-info-val">{partnersList.filter(p => p.status === 'Active Verified').length} Hosts</div>
+                    <div className="stat-info-trend" style={{ color: '#16a34a' }}>Registered & Verified</div>
+                  </div>
+                  <div className="stat-icon-wrap" style={{ background: '#dcfce7', color: '#16a34a' }}>
+                    <Handshake size={24} />
                   </div>
                 </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon" style={{ background: '#ccfbf1', color: '#0d9488' }}>
-                    <Bike size={22} />
-                  </div>
+                <div className="admin-stat-card">
                   <div>
-                    <span className="stat-label">Partner Fleet Listed</span>
-                    <h3 className="stat-value">{partnersList.reduce((acc, curr) => acc + curr.vehiclesCount, 0)} Vehicles</h3>
+                    <div className="stat-info-title">Partner Fleet Listed</div>
+                    <div className="stat-info-val">{partnersList.reduce((acc, curr) => acc + curr.vehiclesCount, 0)} Vehicles</div>
+                    <div className="stat-info-trend" style={{ color: '#0284c7' }}>Across Rishikesh & Dehradun</div>
+                  </div>
+                  <div className="stat-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                    <Bike size={24} />
                   </div>
                 </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon" style={{ background: '#e0f2fe', color: '#0284c7' }}>
-                    <Wallet size={22} />
-                  </div>
+                <div className="admin-stat-card">
                   <div>
-                    <span className="stat-label">Total Partner Earnings</span>
-                    <h3 className="stat-value">₹{partnersList.reduce((acc, curr) => acc + curr.earnings, 0).toLocaleString()}</h3>
+                    <div className="stat-info-title">Total Partner Earnings</div>
+                    <div className="stat-info-val">₹{partnersList.reduce((acc, curr) => acc + curr.earnings, 0).toLocaleString()}</div>
+                    <div className="stat-info-trend" style={{ color: '#10b981' }}>Revenue & Payouts</div>
+                  </div>
+                  <div className="stat-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
+                    <Wallet size={24} />
                   </div>
                 </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
-                    <Clock size={22} />
-                  </div>
+                <div className="admin-stat-card">
                   <div>
-                    <span className="stat-label">Pending Approval Requests</span>
-                    <h3 className="stat-value">{partnersList.filter(p => p.status !== 'Active Verified').length} Pending</h3>
+                    <div className="stat-info-title">Pending Approval Requests</div>
+                    <div className="stat-info-val">{partnersList.filter(p => p.status !== 'Active Verified').length} Pending</div>
+                    <div className="stat-info-trend" style={{ color: '#d97706' }}>Requires Desk Action</div>
+                  </div>
+                  <div className="stat-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
+                    <Clock size={24} />
                   </div>
                 </div>
               </div>
@@ -1057,7 +1135,16 @@ const Admin = () => {
                             </span>
                           </td>
                           <td>
-                            <div style={{ display: 'flex', gap: '6px' }}>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              <button 
+                                type="button"
+                                className="btn btn-outline" 
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                onClick={() => setSelectedPartnerDetails(p)}
+                                title="View Full Host & Partner Details"
+                              >
+                                <Eye size={13} /> View Details
+                              </button>
                               {p.status !== 'Active Verified' && (
                                 <button 
                                   className="btn btn-primary"
@@ -1721,26 +1808,22 @@ const Admin = () => {
       {/* MODAL: Onboard New Partner */}
       <AnimatePresence>
         {isAddPartnerModalOpen && (
-          <div className="admin-modal-overlay">
-            <motion.div 
-              className="admin-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddPartnerModalOpen(false)}
-            />
+          <div className="admin-modal-overlay" onClick={() => setIsAddPartnerModalOpen(false)}>
             <motion.div 
               className="admin-modal-card"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="admin-modal-header">
-                <h3>Onboard New Vehicle Partner / Host</h3>
-                <button onClick={() => setIsAddPartnerModalOpen(false)} className="admin-modal-close"><X size={20} /></button>
+              <div className="admin-modal-header" style={{ background: '#ffffff', padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: '#0f172a' }}>Onboard New Vehicle Partner / Host</h3>
+                <button onClick={() => setIsAddPartnerModalOpen(false)} className="admin-modal-close" style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0.35rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={18} />
+                </button>
               </div>
 
-              <form onSubmit={handleAddPartnerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+              <form onSubmit={handleAddPartnerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', background: '#ffffff' }}>
                 <div className="admin-form-group">
                   <label>Host Agency / Business Name *</label>
                   <input 
@@ -1776,6 +1859,16 @@ const Admin = () => {
                   </div>
                 </div>
 
+                <div className="admin-form-group">
+                  <label>Email Address</label>
+                  <input 
+                    type="email" 
+                    placeholder="e.g. partner@vahan.rentals" 
+                    value={newPartner.email}
+                    onChange={(e) => setNewPartner({ ...newPartner, email: e.target.value })}
+                  />
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="admin-form-group">
                     <label>Category</label>
@@ -1802,7 +1895,7 @@ const Admin = () => {
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
                   <button type="button" className="btn btn-outline" onClick={() => setIsAddPartnerModalOpen(false)}>Cancel</button>
                   <button type="submit" className="btn btn-primary" style={{ background: '#059669', borderColor: '#059669', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <CheckCircle size={16} /> Save & Activate Partner
@@ -1817,19 +1910,13 @@ const Admin = () => {
       {/* MODAL: Full Booking & Renter Verification Form Review */}
       <AnimatePresence>
         {selectedBookingDetails && (
-          <div className="admin-modal-overlay">
-            <motion.div 
-              className="admin-modal-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedBookingDetails(null)}
-            />
+          <div className="admin-modal-overlay" onClick={() => setSelectedBookingDetails(null)}>
             <motion.div 
               className="admin-modal-card booking-review-modal-card"
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="admin-modal-header" style={{ background: '#f8fafc', padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1988,6 +2075,203 @@ const Admin = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODAL: Full Partner Details Review */}
+      <AnimatePresence>
+        {selectedPartnerDetails && (
+          <div className="admin-modal-overlay" onClick={() => setSelectedPartnerDetails(null)}>
+            <motion.div 
+              className="admin-modal-card booking-review-modal-card"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: '#ffffff', borderRadius: '20px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', maxWidth: '680px', width: '92%' }}
+            >
+              {/* Header */}
+              <div className="admin-modal-header" style={{ background: '#ffffff', padding: '1.25rem 1.75rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                      Partner Details: {selectedPartnerDetails.id}
+                    </h3>
+                    <span className={`status-pill ${selectedPartnerDetails.status === 'Active Verified' ? 'success' : 'warning'}`}>
+                      {selectedPartnerDetails.status === 'Active Verified' ? '🟢 Active Verified' : '⏳ Pending Review'}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                    Complete Host Identity, Fleet Capacity, Hub Location & Financial Breakdown
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setSelectedPartnerDetails(null)} 
+                  style={{ background: '#f1f5f9', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0.35rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: '1.5rem', maxHeight: '78vh', overflowY: 'auto', background: '#ffffff' }}>
+                
+                {/* Category Banner Box */}
+                <div style={{ background: '#f0f7ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1d4ed8' }}>
+                    <Compass size={18} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: '800', letterSpacing: '0.3px' }}>BOOKING SOURCE & METHOD</span>
+                  </div>
+                  <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: '100px', fontSize: '0.78rem', fontWeight: '800' }}>
+                    Verified Host Partner
+                  </span>
+                </div>
+
+                {/* SECTION 1: RENTER / HOST IDENTITY VERIFICATION */}
+                <div className="booking-review-section" style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      SECTION 1
+                    </span>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>
+                      Renter / Host Identity Verification
+                    </h4>
+                  </div>
+
+                  <div className="review-grid-3">
+                    <div className="review-field-box">
+                      <span className="field-label">HOST / AGENCY NAME</span>
+                      <strong className="field-value">{selectedPartnerDetails.name}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">OWNER FULL NAME</span>
+                      <strong className="field-value">{selectedPartnerDetails.owner}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">MOBILE / WHATSAPP</span>
+                      <strong className="field-value" style={{ color: '#059669' }}>{selectedPartnerDetails.phone}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '10px' }}>
+                    <div className="review-field-box">
+                      <span className="field-label">REGISTERED EMAIL ADDRESS</span>
+                      <strong className="field-value">{selectedPartnerDetails.email}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ShieldCheck size={20} color="#10b981" />
+                    <div>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0f172a', display: 'block' }}>✓ Driving License / Identity Card Verified</span>
+                      <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Uploaded & Stored in Host Portal Records</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 2: ASSIGNED VEHICLE & RENTAL SCHEDULE */}
+                <div className="booking-review-section" style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
+                    <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      SECTION 2
+                    </span>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>
+                      Assigned Vehicle & Fleet Schedule
+                    </h4>
+                  </div>
+
+                  <div className="review-grid-3">
+                    <div className="review-field-box">
+                      <span className="field-label">PARTNER CATEGORY</span>
+                      <strong className="field-value">{selectedPartnerDetails.type}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">PICKUP HUB LOCATION</span>
+                      <strong className="field-value" style={{ color: '#0f172a' }}>📍 {selectedPartnerDetails.location}</strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">FLEET COUNT</span>
+                      <strong className="field-value" style={{ color: '#0284c7' }}>{selectedPartnerDetails.vehiclesCount} Vehicles</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION 3: FINANCIAL REVENUE & PAYOUT */}
+                <div className="booking-review-section" style={{ marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.85rem' }}>
+                    <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      SECTION 3
+                    </span>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#0f172a' }}>
+                      Revenue Breakdown & Payout Settlement
+                    </h4>
+                  </div>
+
+                  <div className="review-grid-3">
+                    <div className="review-field-box">
+                      <span className="field-label">TOTAL EARNINGS</span>
+                      <strong className="field-value" style={{ fontSize: '1.1rem', color: '#0f172a' }}>
+                        ₹{selectedPartnerDetails.earnings.toLocaleString()}
+                      </strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">PAYOUT STATUS</span>
+                      <strong className="field-value" style={{ color: selectedPartnerDetails.payoutStatus === 'Settled' ? '#16a34a' : '#d97706' }}>
+                        {selectedPartnerDetails.payoutStatus}
+                      </strong>
+                    </div>
+
+                    <div className="review-field-box">
+                      <span className="field-label">ACCOUNT VERIFICATION</span>
+                      <strong className="field-value text-emerald">
+                        {selectedPartnerDetails.status}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                  {selectedPartnerDetails.status !== 'Active Verified' && (
+                    <button 
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
+                      onClick={() => {
+                        handleApprovePartner(selectedPartnerDetails.id);
+                        setSelectedPartnerDetails({ ...selectedPartnerDetails, status: 'Active Verified' });
+                      }}
+                    >
+                      Approve Partner Account
+                    </button>
+                  )}
+                  {selectedPartnerDetails.payoutStatus.includes('Pending') && (
+                    <button 
+                      type="button"
+                      className="btn btn-outline"
+                      style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', color: '#059669', borderColor: '#059669' }}
+                      onClick={() => {
+                        handleSettlePartnerPayout(selectedPartnerDetails.id);
+                        setSelectedPartnerDetails({ ...selectedPartnerDetails, payoutStatus: 'Settled' });
+                      }}
+                    >
+                      Settle Revenue Payout
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-outline" onClick={() => setSelectedPartnerDetails(null)}>
+                    Close
+                  </button>
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
