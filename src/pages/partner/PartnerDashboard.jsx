@@ -6,7 +6,8 @@ import {
   Settings, Plus, Search, Filter, CheckCircle2, Clock,
   TrendingUp, Users, LogOut, ShieldCheck, MapPin, Eye,
   ArrowUpRight, AlertCircle, Sparkles, X, Edit3, Trash2, Upload,
-  Globe, Phone, FileText, Wrench, ChevronDown, Bell, BarChart2, LayoutGrid, Star, Menu
+  Globe, Phone, FileText, Wrench, ChevronDown, Bell, BarChart2, LayoutGrid, Star, Menu,
+  ChevronLeft, ChevronRight, User
 } from 'lucide-react';
 import './PartnerDashboard.css';
 
@@ -125,6 +126,8 @@ const PartnerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'fleet' | 'bookings' | 'payouts' | 'settings'
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isHindiLang, setIsHindiLang] = useState(false);
 
   const [fleet, setFleet] = useState(initialPartnerFleet);
   const [bookings, setBookings] = useState(initialPartnerBookings);
@@ -551,71 +554,142 @@ const PartnerDashboard = () => {
       </header>
 
       {/* Main Body Grid */}
-      <div className="partner-dash-container">
+      <div className={`partner-dash-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {/* Sidebar Nav (Desktop) */}
-        <aside className="partner-sidebar">
-          <div className="partner-user-badge-card">
-            <div className="partner-avatar-circle" style={{ overflow: 'hidden', padding: 0 }}>
-              {hostProfile.logo ? (
-                <img
-                  src={hostProfile.logo}
-                  alt="Host Profile Logo"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                hostProfile.name ? hostProfile.name.charAt(0).toUpperCase() : 'H'
+        <aside className={`partner-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          <div className="partner-sidebar-scroll">
+            <div
+              className="partner-user-badge-card"
+              title={isSidebarCollapsed ? `${hostProfile.name} • Verified Host` : undefined}
+            >
+              <div className="partner-avatar-circle" style={{ overflow: 'hidden', padding: 0 }}>
+                {hostProfile.logo ? (
+                  <img
+                    src={hostProfile.logo}
+                    alt="Host Profile Logo"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  hostProfile.name ? hostProfile.name.charAt(0).toUpperCase() : 'H'
+                )}
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="partner-user-info-text">
+                  <h4 className="partner-host-name">{hostProfile.name}</h4>
+                  <p className="partner-host-id">ID: H-88210 • Verified Host</p>
+                </div>
               )}
             </div>
-            <div>
-              <h4 className="partner-host-name">{hostProfile.name}</h4>
-              <p className="partner-host-id">ID: H-88210 • Verified Host</p>
-            </div>
+
+            <nav className="partner-nav-menu">
+              <button
+                className={`partner-nav-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+                title="Host Overview"
+              >
+                <span className="partner-nav-icon"><LayoutDashboard size={19} /></span>
+                {!isSidebarCollapsed && <span className="partner-nav-label">Host Overview</span>}
+              </button>
+
+              <button
+                className={`partner-nav-btn ${activeTab === 'fleet' ? 'active' : ''}`}
+                onClick={() => setActiveTab('fleet')}
+                title={`Listed Vehicles (${fleet.length})`}
+              >
+                <span className="partner-nav-icon"><Bike size={19} /></span>
+                {!isSidebarCollapsed && (
+                  <span className="partner-nav-label">
+                    Listed Vehicles ({fleet.length})
+                  </span>
+                )}
+              </button>
+
+              <button
+                className={`partner-nav-btn ${activeTab === 'bookings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('bookings')}
+                title={`Live Reservations (${bookings.length})`}
+              >
+                <span className="partner-nav-icon"><Calendar size={19} /></span>
+                {!isSidebarCollapsed && (
+                  <span className="partner-nav-label">
+                    Live Reservations ({bookings.length})
+                  </span>
+                )}
+              </button>
+
+              <button
+                className={`partner-nav-btn ${activeTab === 'payouts' ? 'active' : ''}`}
+                onClick={() => setActiveTab('payouts')}
+                title="Earnings & Payouts"
+              >
+                <span className="partner-nav-icon"><Wallet size={19} /></span>
+                {!isSidebarCollapsed && <span className="partner-nav-label">Earnings & Payouts</span>}
+              </button>
+
+              <button
+                className={`partner-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('settings')}
+                title="Host Settings & KYC"
+              >
+                <span className="partner-nav-icon"><Settings size={19} /></span>
+                {!isSidebarCollapsed && <span className="partner-nav-label">Host Settings & KYC</span>}
+              </button>
+            </nav>
+
+            {!isSidebarCollapsed && (
+              <div className="partner-sidebar-promo">
+                <Sparkles size={20} className="promo-sparkle" />
+                <h5>Need Fleet Financing?</h5>
+                <p>Expand your bike or car fleet with 0% commission partner loans.</p>
+                <a href="https://wa.me/917060512661" target="_blank" rel="noopener noreferrer" className="promo-link">
+                  Contact Desk <ArrowUpRight size={14} />
+                </a>
+              </div>
+            )}
           </div>
 
-          <nav className="partner-nav-menu">
-            <button
-              className={`partner-nav-btn ${activeTab === 'overview' ? 'active' : ''}`}
-              onClick={() => setActiveTab('overview')}
+          {/* Bottom Controls Area (Language Toggle, Profile, Collapse Toggle) */}
+          <div className="partner-sidebar-footer">
+            {/* Language Switch */}
+            <div
+              className={`partner-sidebar-lang-toggle ${isSidebarCollapsed ? 'collapsed' : ''}`}
+              onClick={() => setIsHindiLang(!isHindiLang)}
+              title={isHindiLang ? "Language: Hindi" : "Language: English"}
             >
-              <LayoutDashboard size={18} /> Host Overview
-            </button>
+              <div className={`partner-toggle-switch ${isHindiLang ? 'active' : ''}`}>
+                <div className="partner-toggle-thumb"></div>
+              </div>
+              {!isSidebarCollapsed && <span className="partner-lang-label">Hindi</span>}
+            </div>
 
-            <button
-              className={`partner-nav-btn ${activeTab === 'fleet' ? 'active' : ''}`}
-              onClick={() => setActiveTab('fleet')}
-            >
-              <Bike size={18} /> Listed Vehicles ({fleet.length})
-            </button>
-
-            <button
-              className={`partner-nav-btn ${activeTab === 'bookings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('bookings')}
-            >
-              <Calendar size={18} /> Live Reservations ({bookings.length})
-            </button>
-
-            <button
-              className={`partner-nav-btn ${activeTab === 'payouts' ? 'active' : ''}`}
-              onClick={() => setActiveTab('payouts')}
-            >
-              <Wallet size={18} /> Earnings & Payouts
-            </button>
-
-            <button
-              className={`partner-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            {/* User Profile Bar */}
+            <div
+              className={`partner-sidebar-user-row ${isSidebarCollapsed ? 'collapsed' : ''}`}
               onClick={() => setActiveTab('settings')}
+              title={hostProfile.name || "VIKIRANJAN KUMAR"}
             >
-              <Settings size={18} /> Host Settings & KYC
-            </button>
-          </nav>
+              <div className="partner-sidebar-user-avatar">
+                <User size={18} />
+              </div>
+              {!isSidebarCollapsed && (
+                <>
+                  <span className="partner-sidebar-user-name">
+                    {hostProfile.name?.toUpperCase() || 'VIKIRANJAN KUMAR'}
+                  </span>
+                  <ChevronRight size={16} className="partner-user-chevron" />
+                </>
+              )}
+            </div>
 
-          <div className="partner-sidebar-promo">
-            <Sparkles size={20} className="promo-sparkle" />
-            <h5>Need Fleet Financing?</h5>
-            <p>Expand your bike or car fleet with 0% commission partner loans.</p>
-            <a href="https://wa.me/917060512661" target="_blank" rel="noopener noreferrer" className="promo-link">
-              Contact Desk <ArrowUpRight size={14} />
-            </a>
+            {/* Collapse / Expand Toggle Button Bar */}
+            <button
+              className="partner-sidebar-collapse-btn"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              title={isSidebarCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
+              aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Minimize Sidebar"}
+            >
+              {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
           </div>
         </aside>
 
