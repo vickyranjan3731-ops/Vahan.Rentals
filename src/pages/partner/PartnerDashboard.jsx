@@ -322,6 +322,11 @@ const PartnerDashboard = () => {
       return;
     }
 
+    if (newRide.riderPhone.length !== 10) {
+      showToast('Please enter a valid 10-digit mobile number.', 'error');
+      return;
+    }
+
     const selectedV = fleet.find(f => f.id === newRide.vehicleId) || fleet[0];
 
     // Dynamic days computation based on pickup and return dates
@@ -2446,10 +2451,17 @@ const PartnerDashboard = () => {
                       <label>MOBILE / WHATSAPP *</label>
                       <input
                         type="tel"
-                        placeholder="e.g. +91 98765 43210"
+                        placeholder="10-digit mobile number"
                         required
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]{10}"
+                        title="Please enter a 10-digit mobile number"
                         value={newRide.riderPhone}
-                        onChange={(e) => setNewRide({ ...newRide, riderPhone: e.target.value })}
+                        onChange={(e) => {
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setNewRide({ ...newRide, riderPhone: digitsOnly });
+                        }}
                       />
                     </div>
 

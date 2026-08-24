@@ -360,8 +360,14 @@ const UserProfileModal = ({ isOpen, onClose, userAuth, onLogout, onProfileUpdate
                     <input 
                       type="tel" 
                       value={phone} 
+                      maxLength={10}
+                      inputMode="numeric"
+                      pattern="[0-9]{10}"
                       disabled={verificationStatus === 'verified'}
-                      onChange={(e) => setPhone(e.target.value)} 
+                      onChange={(e) => {
+                        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(digitsOnly);
+                      }} 
                       placeholder="e.g. 7060512661"
                       className={verificationStatus === 'verified' ? 'locked-input' : ''}
                     />

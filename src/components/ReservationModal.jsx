@@ -400,9 +400,13 @@ const ReservationModal = ({
                       <input 
                         type="tel" 
                         placeholder="e.g. 9876543210" 
+                        maxLength={10}
+                        inputMode="numeric"
+                        pattern="[0-9]{10}"
                         value={phone}
                         onChange={(e) => {
-                          setPhone(e.target.value);
+                          const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                          setPhone(digitsOnly);
                           if (errors.phone) setErrors(prev => ({ ...prev, phone: null }));
                         }}
                         className={errors.phone ? 'error' : ''}
