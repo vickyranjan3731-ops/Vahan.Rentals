@@ -23,6 +23,7 @@ import Admin from './pages/admin/Admin';
 import AdminLogin from './pages/admin/AdminLogin';
 import PartnerLogin from './pages/partner/PartnerLogin';
 import PartnerDashboard from './pages/partner/PartnerDashboard';
+import RegisterNewRide from './pages/partner/RegisterNewRide';
 
 import './App.css';
 
@@ -63,6 +64,10 @@ const AppContent = () => {
         <Route 
           path="/partner/dashboard" 
           element={isPartnerAuthenticated ? <PartnerDashboard /> : <Navigate to="/partner/login" replace />} 
+        />
+        <Route 
+          path="/partner/register-rider" 
+          element={isPartnerAuthenticated ? <RegisterNewRide /> : <Navigate to="/partner/login" replace />} 
         />
         <Route 
           path="/partner" 
