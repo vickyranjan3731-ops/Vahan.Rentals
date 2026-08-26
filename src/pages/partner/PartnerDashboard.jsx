@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Handshake, LayoutDashboard, Bike, Car, Calendar, Wallet,
@@ -14,7 +14,8 @@ import './PartnerDashboard.css';
 
 const PartnerDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'fleet' | 'bookings' | 'payouts' | 'settings'
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(() => location.state?.activeTab || 'overview'); // 'overview' | 'fleet' | 'bookings' | 'payouts' | 'settings'
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isHindiLang, setIsHindiLang] = useState(false);
@@ -23,11 +24,14 @@ const PartnerDashboard = () => {
   const [bookings, setBookings] = useState(getPartnerBookings());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Keep synced with latest partner bookings/fleet
+  // Keep synced with latest partner bookings/fleet & location state
   useEffect(() => {
     setFleet(getPartnerFleet());
     setBookings(getPartnerBookings());
-  }, []);
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   // Date Report Filter State
   const [selectedReportDate, setSelectedReportDate] = useState('2026-08-05');
