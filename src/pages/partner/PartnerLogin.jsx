@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Handshake, Eye, EyeOff, ArrowRight, CheckCircle2, Shield, TrendingUp, KeyRound } from 'lucide-react';
+import { authenticateHost } from '../../services/supabaseService';
 import './PartnerLogin.css';
 
 const PartnerLogin = ({ onLoginSuccess }) => {
@@ -14,13 +15,7 @@ const PartnerLogin = ({ onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleFillDemo = () => {
-    setEmail('partner@vahan.rentals');
-    setPassword('partner123');
-    setErrorMsg('');
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setErrorMsg('Please enter both partner email/phone and passcode.');
@@ -30,14 +25,23 @@ const PartnerLogin = ({ onLoginSuccess }) => {
     setIsSubmitting(true);
     setErrorMsg('');
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      localStorage.setItem('vahan_partner_auth', 'true');
-      if (onLoginSuccess) {
-        onLoginSuccess({ email, partnerType });
+    try {
+      const authResult = await authenticateHost(email.trim(), password);
+      
+      if (authResult.success) {
+        localStorage.setItem('vahan_partner_auth', 'true');
+        if (onLoginSuccess) {
+          onLoginSuccess({ email, partnerType, user: authResult.user });
+        }
+        navigate('/partner/dashboard');
+      } else {
+        setErrorMsg(authResult.error || 'Invalid partner email/phone or passcode.');
       }
-      navigate('/partner/dashboard');
-    }, 600);
+    } catch (err) {
+      setErrorMsg('Authentication failed: ' + (err.message || 'Server error'));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,14 +168,6 @@ const PartnerLogin = ({ onLoginSuccess }) => {
                 />
                 Keep me logged in
               </label>
-
-              <button 
-                type="button" 
-                className="partner-login-demo-btn"
-                onClick={handleFillDemo}
-              >
-                ⚡ Auto Fill Partner Credentials
-              </button>
             </div>
 
             <button 

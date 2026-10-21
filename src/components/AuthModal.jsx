@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, ArrowRight, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react';
+import { sendOtpWithFirebase, verifyOtpWithFirebase } from '../services/apiService';
 import './AuthModal.css';
 
 const AuthModal = ({ 
@@ -18,40 +19,48 @@ const AuthModal = ({
 
   if (!isOpen) return null;
 
-  const handleSendOtp = (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setErrorMsg('Please enter a valid email address.');
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || !email.trim() || !emailRegex.test(email.trim())) {
+      setErrorMsg('Invalid email address (e.g. name@example.com)');
       return;
     }
 
     setErrorMsg('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      await sendOtpWithFirebase(email.trim());
       setIsSubmitting(false);
       setStep(2);
-      // Auto-fill demo OTP 7060 for easy testing
-      setOtp(['7', '0', '6', '0']);
-    }, 600);
+      setOtp(['', '', '', '']);
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorMsg(err.message || 'Failed to send OTP code. Please try again.');
+    }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const enteredOtp = otp.join('');
     if (enteredOtp.length < 4) {
-      setErrorMsg('Please enter the 4-digit OTP code.');
+      setErrorMsg('Please enter the complete 4-digit OTP code.');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg('');
 
-    setTimeout(() => {
+    try {
+      const res = await verifyOtpWithFirebase(email.trim(), enteredOtp);
       setIsSubmitting(false);
+
       const userData = {
-        identifier: email,
+        identifier: email.trim(),
+        email: email.trim(),
         name: email.split('@')[0] || 'Rider User',
+        uid: res.user?.uid || `user-${Date.now()}`,
         loggedInAt: new Date().toISOString()
       };
       localStorage.setItem('vahan_user_auth', JSON.stringify(userData));
@@ -61,7 +70,10 @@ const AuthModal = ({
       } else {
         onClose();
       }
-    }, 600);
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorMsg(err.message || 'Invalid OTP code. Please check and try again.');
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -165,10 +177,6 @@ const AuthModal = ({
                     autoFocus={index === 0}
                   />
                 ))}
-              </div>
-
-              <div className="otp-hint-text">
-                Demo OTP pre-filled: <strong>7060</strong>
               </div>
 
               <button 

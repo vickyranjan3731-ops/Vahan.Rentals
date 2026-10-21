@@ -14,13 +14,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleFillDemo = () => {
-    setEmail('admin@vahan.rentals');
-    setPassword('admin123');
-    setErrorMsg('');
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setErrorMsg('Please enter both admin email and passcode.');
@@ -30,14 +24,29 @@ const AdminLogin = ({ onLoginSuccess }) => {
     setIsSubmitting(true);
     setErrorMsg('');
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+      const res = await fetch(`${API_BASE_URL}/auth/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, role })
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Invalid administrator credentials');
+      }
+
       localStorage.setItem('vahan_admin_auth', 'true');
       if (onLoginSuccess) {
-        onLoginSuccess({ email, role });
+        onLoginSuccess({ email: json.user?.email || email, role });
       }
       navigate('/admin/dashboard');
-    }, 600);
+    } catch (err) {
+      setErrorMsg(err.message || 'Administrator authentication failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -147,14 +156,6 @@ const AdminLogin = ({ onLoginSuccess }) => {
                 />
                 Keep me logged in
               </label>
-
-              <button 
-                type="button" 
-                className="admin-login-demo-btn"
-                onClick={handleFillDemo}
-              >
-                ⚡ Auto Fill Demo
-              </button>
             </div>
 
             <button 

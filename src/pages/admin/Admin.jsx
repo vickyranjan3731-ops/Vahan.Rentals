@@ -1,36 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Car, Bike, Compass, CalendarCheck, PhoneCall, 
   TrendingUp, Users, User, Settings, Plus, Search, Filter, Edit3, Trash2, 
   CheckCircle, Clock, XCircle, Download, LogOut, Eye, Bell, X, ShieldAlert,
-  Upload, Image, ShieldCheck, Handshake, Wallet, MessageSquare
+  Upload, Image, ShieldCheck, Handshake, Wallet, MessageSquare,
+  Sparkles, Loader2, Zap, ExternalLink
 } from 'lucide-react';
-import { bikeData, carData, experienceData } from '../../data';
 import './Admin.css';
 
-const initialPartnersData = [
-  { id: 'H-1000', name: 'vahan.rentals (Official Fleet)', owner: 'Vahan Official Desk', phone: '+91 70605 12661', email: 'official@vahan.rentals', type: 'Official Master Host', location: 'Tapovan Rishikesh (HQ)', vehiclesCount: 12, earnings: 348500, payoutStatus: 'Settled', status: 'Active Verified', isOfficial: true },
-  { id: 'H-8821', name: 'Himalayan Fleet Host', owner: 'Vikas Sharma', phone: '+91 70605 12661', email: 'partner@vahan.rentals', type: 'Bike & Scooty Host', location: 'Tapovan Rishikesh', vehiclesCount: 4, earnings: 121300, payoutStatus: 'Settled', status: 'Active Verified' },
-  { id: 'H-8822', name: 'Garhwal Motors & Cab Service', owner: 'Ramesh Singh', phone: '+91 98970 12345', email: 'garhwal.cabs@gmail.com', type: 'Car & Taxi Host', location: 'Dehradun Airport', vehiclesCount: 3, earnings: 84500, payoutStatus: 'Pending (₹18,500)', status: 'Active Verified' },
-  { id: 'H-8823', name: 'Ganga Valley Rentals', owner: 'Anuj Rawat', phone: '+91 94120 55667', email: 'ganga.rentals@gmail.com', type: 'Bike Host', location: 'Laxman Jhula', vehiclesCount: 2, earnings: 28000, payoutStatus: 'Settled', status: 'Active Verified' },
-  { id: 'H-8824', name: 'Rishikesh Express Fleet', owner: 'Deepak Joshi', phone: '+91 98370 99881', email: 'deepak.express@gmail.com', type: 'Franchise Partner', location: 'Rishikesh Station', vehiclesCount: 1, earnings: 12000, payoutStatus: 'Pending (₹5,200)', status: 'Pending Approval' },
-];
-
-const initialBookings = [
-  { id: 'VR-1092', customer: 'Rahul Verma', vehicle: 'Royal Enfield Himalayan 450', type: 'Bike', dates: '18 Jul - 20 Jul 2026', price: '₹3,000', status: 'Pending', location: 'Tapovan Rishikesh' },
-  { id: 'VR-1093', customer: 'Ananya Roy', vehicle: 'Mahindra Thar 4x4 Hard Top', type: 'Car', dates: '19 Jul - 22 Jul 2026', price: '₹13,500', status: 'Active Trip', location: 'Dehradun Airport' },
-  { id: 'VR-1094', customer: 'Vikram Seth', vehicle: 'White Water Rafting (Shivpuri)', type: 'Experience', dates: '18 Jul 2026', price: '₹2,400', status: 'Completed', location: 'Shivpuri' },
-  { id: 'VR-1095', customer: 'Suresh Kumar', vehicle: 'Honda Activa 6G', type: 'Bike', dates: '20 Jul - 21 Jul 2026', price: '₹1,000', status: 'Pending', location: 'Laxman Jhula' },
-  { id: 'VR-1096', customer: 'Neha Sharma', vehicle: 'Toyota Innova Crysta', type: 'Car', dates: '21 Jul - 25 Jul 2026', price: '₹18,000', status: 'Confirmed', location: 'Rishikesh Station' },
-];
-
-const initialCallbacks = [
-  { id: 'CB-801', name: 'Amitabh Sen', phone: '+91 98765 12345', interest: 'Bike Rental', date: '24 Jul 2026, 14:30', status: 'New', note: 'Interested in Himalayan 450 for Chopta trip.', adminComment: '' },
-  { id: 'CB-802', name: 'Priya Mehra', phone: '+91 99100 88776', interest: 'Car/Taxi Fleet', date: '24 Jul 2026, 12:15', status: 'Contacted', note: 'Asked about Char Dham Innova taxi rate.', adminComment: '' },
-  { id: 'CB-803', name: 'Karan Patel', phone: '+91 98111 22334', interest: 'Experiences', date: '23 Jul 2026, 18:45', status: 'Resolved', note: 'Rafting group booking for 6 people.', adminComment: 'Confirmed rafting booking for 6 seats on 25th Jul.' },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -38,35 +18,111 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [fleetCategoryFilter, setFleetCategoryFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // KYC User Verification state
-  const [kycRequests, setKycRequests] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('vahan_admin_kyc_requests') || '[]');
-    } catch (err) {
-      return [];
+  // Live Database States
+  const [fleetList, setFleetList] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [partnersList, setPartnersList] = useState([]);
+  const [callbacks, setCallbacks] = useState([]);
+  const [kycRequests, setKycRequests] = useState([]);
+
+  // Modal and Selection States
+  const [isSelectCategoryModalOpen, setIsSelectCategoryModalOpen] = useState(false);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
+  const [modalBookingStatus, setModalBookingStatus] = useState('Confirmed');
+  const [selectedPartnerDetails, setSelectedPartnerDetails] = useState(null);
+
+  // Booking Modal Handlers
+  const handleOpenBookingModal = (b) => {
+    setSelectedBookingDetails(b);
+    setModalBookingStatus(b.status || 'Confirmed');
+  };
+
+  const handleSaveBookingModalStatus = async (e) => {
+    e.preventDefault();
+    if (selectedBookingDetails) {
+      const bookingId = selectedBookingDetails.id || selectedBookingDetails.bookingId || selectedBookingDetails.booking_id;
+      await handleUpdateBookingStatus(bookingId, modalBookingStatus);
+      setSelectedBookingDetails(null);
     }
-  });
+  };
 
-  const handleApproveKyc = (email) => {
-    const updatedRequests = kycRequests.map(r => r.email === email ? { ...r, verificationStatus: 'verified' } : r);
-    setKycRequests(updatedRequests);
-    localStorage.setItem('vahan_admin_kyc_requests', JSON.stringify(updatedRequests));
+  // Fetch all live data from Turso DB on mount
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      setIsLoading(true);
+      try {
+        const [vehRes, bookRes, hostRes, contactRes, userRes] = await Promise.allSettled([
+          fetch(`${API_BASE_URL}/vehicles`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/bookings`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/hosts`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/contact`).then(r => r.json()),
+          fetch(`${API_BASE_URL}/auth/users`).then(r => r.json())
+        ]);
 
-    // Update current user auth if matching email
-    try {
-      const savedUser = JSON.parse(localStorage.getItem('vahan_user_auth') || '{}');
-      if (savedUser.email === email || savedUser.identifier === email) {
-        savedUser.verificationStatus = 'verified';
-        localStorage.setItem('vahan_user_auth', JSON.stringify(savedUser));
+        if (vehRes.status === 'fulfilled' && vehRes.value?.success) {
+          setFleetList(vehRes.value.data.map(v => ({
+            ...v,
+            itemType: v.item_type || v.itemType || (v.category === 'Car' ? 'Car' : v.category === 'ADVENTURE' || v.category === 'PILGRIMAGE / TOUR' || v.category === 'EXTREME SPORT' ? 'Experience' : 'Bike')
+          })));
+        }
+
+        if (bookRes.status === 'fulfilled' && bookRes.value?.success) {
+          setBookings(bookRes.value.data.map(b => ({
+            ...b,
+            id: b.booking_id || b.id,
+            customer: b.full_name,
+            vehicle: b.vehicle_title,
+            dates: `${b.formatted_start_date || b.start_date} - ${b.formatted_end_date || b.end_date}`,
+            price: `₹${Number(b.total_amount || 0).toLocaleString('en-IN')}`,
+            status: b.booking_status || 'Confirmed',
+            location: b.pickup_location
+          })));
+        }
+
+        if (hostRes.status === 'fulfilled' && hostRes.value?.success) {
+          setPartnersList(hostRes.value.data);
+        }
+
+        if (contactRes.status === 'fulfilled' && contactRes.value?.success) {
+          setCallbacks(contactRes.value.data);
+        }
+
+        if (userRes.status === 'fulfilled' && userRes.value?.success) {
+          setKycRequests(userRes.value.data.map(u => ({
+            ...u,
+            name: u.full_name,
+            verificationStatus: u.kyc_status
+          })));
+        }
+      } catch (err) {
+        console.error('Error fetching admin data from Turso DB:', err);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (isAuthenticated) {
+      fetchAdminData();
+    }
+  }, [isAuthenticated]);
+
+  const handleApproveKyc = async (emailOrId) => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/users/${encodeURIComponent(emailOrId)}/kyc`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kycStatus: 'verified' })
+      });
+      setKycRequests(kycRequests.map(r => (r.email === emailOrId || r.id === emailOrId) ? { ...r, verificationStatus: 'verified', kyc_status: 'verified' } : r));
     } catch (err) {
-      console.error(err);
+      console.error('Error updating KYC in DB:', err);
     }
   };
 
   // Partner Management State
-  const [partnersList, setPartnersList] = useState(initialPartnersData);
   const [isAddPartnerModalOpen, setIsAddPartnerModalOpen] = useState(false);
   const [newPartner, setNewPartner] = useState({
     name: '',
@@ -77,73 +133,80 @@ const Admin = () => {
     location: 'Tapovan Rishikesh'
   });
 
-  const handleApprovePartner = (id) => {
-    setPartnersList(partnersList.map(p => p.id === id ? { ...p, status: 'Active Verified' } : p));
+  const handleApprovePartner = async (id) => {
+    try {
+      await fetch(`${API_BASE_URL}/hosts/${encodeURIComponent(id)}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Active Verified' })
+      });
+      setPartnersList(partnersList.map(p => p.id === id ? { ...p, status: 'Active Verified' } : p));
+    } catch (err) {
+      console.error('Error approving partner in DB:', err);
+    }
   };
 
-  const handleSettlePartnerPayout = (id) => {
-    setPartnersList(partnersList.map(p => p.id === id ? { ...p, payoutStatus: 'Settled' } : p));
+  const handleSettlePartnerPayout = async (id) => {
+    try {
+      await fetch(`${API_BASE_URL}/hosts/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payoutStatus: 'Settled' })
+      });
+      setPartnersList(partnersList.map(p => p.id === id ? { ...p, payoutStatus: 'Settled' } : p));
+    } catch (err) {
+      console.error('Error updating payout in DB:', err);
+    }
   };
 
-  const handleAddPartnerSubmit = (e) => {
+  const handleDeletePartner = async (id) => {
+    if (window.confirm(`Are you sure you want to delete partner host '${id}'? This will remove the host from your platform.`)) {
+      try {
+        await fetch(`${API_BASE_URL}/hosts/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        setPartnersList(partnersList.filter(p => p.id !== id));
+        if (selectedPartnerDetails && selectedPartnerDetails.id === id) {
+          setSelectedPartnerDetails(null);
+        }
+      } catch (err) {
+        console.error('Error deleting partner from DB:', err);
+      }
+    }
+  };
+
+  const handleAddPartnerSubmit = async (e) => {
     e.preventDefault();
     if (!newPartner.name || !newPartner.owner || !newPartner.phone) {
       alert('Please fill in agency name, owner name, and phone number.');
       return;
     }
-    const created = {
-      id: `H-${Math.floor(8825 + Math.random() * 100)}`,
+    const partnerPayload = {
       name: newPartner.name,
       owner: newPartner.owner,
       phone: newPartner.phone,
-      email: newPartner.email || `${newPartner.name.toLowerCase().replace(/\s+/g, '')}@vahan.rentals`,
-      type: newPartner.type,
-      location: newPartner.location,
-      vehiclesCount: 0,
-      earnings: 0,
-      payoutStatus: 'Settled',
+      email: newPartner.email || `${newPartner.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@vahan.rentals`,
+      hubLocation: newPartner.location,
       status: 'Active Verified'
     };
-    setPartnersList([created, ...partnersList]);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/hosts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(partnerPayload)
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setPartnersList([json.data, ...partnersList]);
+      }
+    } catch (err) {
+      console.error('Error saving partner to DB:', err);
+    }
+
     setIsAddPartnerModalOpen(false);
     setNewPartner({ name: '', owner: '', phone: '', email: '', type: 'Bike & Scooty Host', location: 'Tapovan Rishikesh' });
   };
-
-  // Selected Booking Details Review Modal State
-  const [selectedBookingDetails, setSelectedBookingDetails] = useState(null);
-  const [modalBookingStatus, setModalBookingStatus] = useState('');
-
-  // Selected Partner Details Modal State
-  const [selectedPartnerDetails, setSelectedPartnerDetails] = useState(null);
-
-  const handleOpenBookingModal = (booking) => {
-    setSelectedBookingDetails(booking);
-    setModalBookingStatus(booking.status || 'Confirmed');
-  };
-
-  const handleSaveBookingModalStatus = (e) => {
-    e.preventDefault();
-    if (!selectedBookingDetails) return;
-    const targetId = selectedBookingDetails.id || selectedBookingDetails.bookingId;
-    handleUpdateBookingStatus(targetId, modalBookingStatus);
-    setSelectedBookingDetails(null);
-  };
-
-  // Exit Modal State
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-
-  // Category Selection Modal State
-  const [isSelectCategoryModalOpen, setIsSelectCategoryModalOpen] = useState(false);
-
-  // Master Fleet State combining bikeData, carData, experienceData
-  const [fleetList, setFleetList] = useState([
-    ...bikeData.map(b => ({ ...b, itemType: 'Bike', status: 'Available' })),
-    ...carData.map(c => ({ ...c, itemType: 'Car', status: 'Available' })),
-    ...experienceData.map(e => ({ ...e, itemType: 'Experience', status: 'Available' }))
-  ]);
-
-  const [bookings, setBookings] = useState(initialBookings);
-  const [callbacks, setCallbacks] = useState(initialCallbacks);
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -222,7 +285,7 @@ const Admin = () => {
     setIsAddModalOpen(true);
   };
 
-  const handleAddVehicleSubmit = (e) => {
+  const handleAddVehicleSubmit = async (e) => {
     e.preventDefault();
     const priceFormatted = newVehicle.price.startsWith('₹') ? newVehicle.price : `₹${newVehicle.price}`;
     
@@ -249,10 +312,25 @@ const Admin = () => {
       status: 'Available'
     };
 
-    if (editingVehicleId) {
-      setFleetList(fleetList.map(item => item.id === editingVehicleId ? vehicleData : item));
-    } else {
-      setFleetList([vehicleData, ...fleetList]);
+    try {
+      if (editingVehicleId) {
+        await fetch(`${API_BASE_URL}/vehicles/${encodeURIComponent(editingVehicleId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(vehicleData)
+        });
+        setFleetList(fleetList.map(item => item.id === editingVehicleId ? vehicleData : item));
+      } else {
+        const res = await fetch(`${API_BASE_URL}/vehicles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(vehicleData)
+        });
+        const json = await res.json();
+        setFleetList([json.data || vehicleData, ...fleetList]);
+      }
+    } catch (err) {
+      console.error('Error saving vehicle to DB:', err);
     }
 
     setIsAddModalOpen(false);
@@ -260,82 +338,242 @@ const Admin = () => {
     setNewVehicle(initialVehicleState);
   };
 
+  // ImageKit & Specs Auto-fetch States
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState(null);
+  const [specsSearchQuery, setSpecsSearchQuery] = useState('');
+  const [isFetchingSpecs, setIsFetchingSpecs] = useState(false);
+  const [specsFeedbackMessage, setSpecsFeedbackMessage] = useState(null);
+
+  const handleAutoFetchSpecs = async (searchOverride = null) => {
+    const query = (typeof searchOverride === 'string' ? searchOverride : specsSearchQuery || newVehicle.title || '').trim();
+    if (!query) {
+      setSpecsFeedbackMessage({ type: 'error', text: '⚠️ Please enter a vehicle name (e.g. "Himalayan 450", "Thar 4x4", "Duke 390") to fetch specs.' });
+      return;
+    }
+
+    setIsFetchingSpecs(true);
+    setSpecsFeedbackMessage(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/vehicles/specs-lookup?q=${encodeURIComponent(query)}`);
+      const result = await res.json();
+      const payload = result.data || result.specs || result;
+      const specs = payload.specs || payload;
+
+      if (res.ok && result.success !== false && (payload.engineCapacity || specs.engineCapacity || specs.engine)) {
+        setNewVehicle(prev => ({
+          ...prev,
+          title: payload.title || prev.title || query,
+          engineCapacity: specs.engineCapacity || specs.engine || prev.engineCapacity,
+          maxPower: specs.maxPower || specs.power || prev.maxPower,
+          fuelType: specs.fuelType || specs.fuelTank || prev.fuelType,
+          mileage: specs.mileage || prev.mileage,
+          transmission: specs.transmission || prev.transmission,
+          seating: specs.seating || prev.seating,
+          description: payload.description || prev.description,
+          category: payload.category || (payload.itemType === 'Bike' ? 'Bike' : payload.itemType === 'Car' ? 'Cars & Taxi Fleet' : 'Scooty'),
+          itemType: payload.itemType || prev.itemType,
+          included: Array.isArray(payload.included) ? payload.included.join(', ') : (payload.included || prev.included),
+          documents: payload.documents || prev.documents
+        }));
+
+        setSpecsFeedbackMessage({
+          type: 'success',
+          text: `✨ Technical specifications for "${payload.title || query}" fetched and auto-filled!`
+        });
+      } else {
+        setSpecsFeedbackMessage({
+          type: 'warning',
+          text: `ℹ️ Could not find complete specs for "${query}". You can fill in the fields manually.`
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching vehicle specs:', err);
+      setSpecsFeedbackMessage({
+        type: 'error',
+        text: '❌ Connection error while fetching specs. Please verify backend connectivity.'
+      });
+    } finally {
+      setIsFetchingSpecs(false);
+    }
+  };
+
   const handleImageFileUpload = (e) => {
     const file = e.target.files && e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image file size exceeds 5MB. Please select a smaller image.');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewVehicle(prev => ({ ...prev, image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Image file size exceeds 10MB. Please select a smaller image.');
+      return;
     }
+
+    setIsUploadingImage(true);
+    setUploadStatus({ type: 'loading', text: 'Uploading to ImageKit CDN...' });
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64Data = reader.result;
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/upload/image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            file: base64Data,
+            fileName: file.name,
+            folder: '/vahan-fleet'
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && data.url) {
+          setNewVehicle(prev => ({ ...prev, image: data.url }));
+          setUploadStatus({ type: 'success', text: '✅ Image uploaded to ImageKit CDN successfully!' });
+        } else {
+          // Fallback to data URL if ImageKit is not configured yet in .env
+          setNewVehicle(prev => ({ ...prev, image: base64Data }));
+          setUploadStatus({ 
+            type: 'info', 
+            text: data.message?.includes('credentials') 
+              ? 'ℹ️ Image preview loaded (ImageKit API keys not set in backend .env yet).'
+              : 'ℹ️ Preview loaded locally.'
+          });
+        }
+      } catch (err) {
+        console.warn('ImageKit backend upload error, using local preview fallback:', err);
+        setNewVehicle(prev => ({ ...prev, image: base64Data }));
+        setUploadStatus({ type: 'info', text: 'Image preview loaded locally.' });
+      } finally {
+        setIsUploadingImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Resolution Modal State
   const [pendingResolutionItem, setPendingResolutionItem] = useState(null);
   const [resolutionInputText, setResolutionInputText] = useState('');
 
-  const handleToggleStatus = (id) => {
-    setFleetList(fleetList.map(item => {
-      if (item.id === id) {
-        const nextStatus = item.status === 'Available' ? 'Under Maintenance' : 'Available';
-        return { ...item, status: nextStatus };
-      }
-      return item;
-    }));
-  };
-
-  const handleDeleteItem = (id) => {
-    if (window.confirm('Are you sure you want to remove this item from the fleet?')) {
-      setFleetList(fleetList.filter(item => item.id !== id));
+  const handleToggleStatus = async (id) => {
+    const target = fleetList.find(item => item.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'Available' ? 'Under Maintenance' : 'Available';
+    try {
+      await fetch(`${API_BASE_URL}/vehicles/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      setFleetList(fleetList.map(item => item.id === id ? { ...item, status: nextStatus } : item));
+    } catch (err) {
+      console.error('Error updating vehicle status in DB:', err);
     }
   };
 
-  const handleUpdateBookingStatus = (id, newStatus) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status: newStatus } : b));
+  const handleDeleteItem = async (id) => {
+    if (window.confirm('Are you sure you want to remove this item from the fleet?')) {
+      try {
+        await fetch(`${API_BASE_URL}/vehicles/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        setFleetList(fleetList.filter(item => item.id !== id));
+      } catch (err) {
+        console.error('Error deleting vehicle from DB:', err);
+      }
+    }
+  };
+
+  const handleUpdateBookingStatus = async (id, newStatus) => {
+    try {
+      await fetch(`${API_BASE_URL}/bookings/${encodeURIComponent(id)}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      setBookings(bookings.map(b => (b.id === id || b.bookingId === id || b.booking_id === id) ? { ...b, status: newStatus } : b));
+    } catch (err) {
+      console.error('Error updating booking status in DB:', err);
+    }
   };
 
   const handleUpdateCallbackComment = (id, text) => {
     setCallbacks(callbacks.map(c => c.id === id ? { ...c, adminComment: text } : c));
   };
 
-  const handleUpdateCallbackStatus = (id, newStatus) => {
+  const handleUpdateCallbackStatus = async (id, newStatus) => {
     const target = callbacks.find(c => c.id === id);
     if (newStatus === 'Resolved') {
-      if (!target.adminComment || target.adminComment.trim() === '') {
+      if (!target?.adminComment || target.adminComment.trim() === '') {
         setPendingResolutionItem(target);
         setResolutionInputText('');
         return;
       }
     }
-    setCallbacks(callbacks.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    try {
+      await fetch(`${API_BASE_URL}/contact/${encodeURIComponent(id)}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      setCallbacks(callbacks.map(c => c.id === id ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      console.error('Error updating callback status in DB:', err);
+    }
   };
 
-  const handleSaveResolutionComment = (e) => {
+  const handleSaveResolutionComment = async (e) => {
     e.preventDefault();
     if (!resolutionInputText.trim()) {
       alert('Please enter a resolution comment before marking this request as Resolved & Locked.');
       return;
     }
-    setCallbacks(callbacks.map(c => {
-      if (c.id === pendingResolutionItem.id) {
-        return { ...c, status: 'Resolved', adminComment: resolutionInputText.trim() };
+    if (pendingResolutionItem) {
+      try {
+        await fetch(`${API_BASE_URL}/contact/${encodeURIComponent(pendingResolutionItem.id)}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'Resolved' })
+        });
+        setCallbacks(callbacks.map(c => {
+          if (c.id === pendingResolutionItem.id) {
+            return { ...c, status: 'Resolved', adminComment: resolutionInputText.trim() };
+          }
+          return c;
+        }));
+      } catch (err) {
+        console.error('Error saving callback resolution in DB:', err);
       }
-      return c;
-    }));
+    }
     setPendingResolutionItem(null);
     setResolutionInputText('');
   };
 
   // Filtered Fleet
-  const filteredFleet = fleetList.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.location.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredFleet = (fleetList || []).filter(item => {
+    if (!item) return false;
+    const itemTitle = (item.title || '').toLowerCase();
+    const itemLoc = (item.location || '').toLowerCase();
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = itemTitle.includes(query) || itemLoc.includes(query);
     const matchesCategory = fleetCategoryFilter === 'all' || item.itemType === fleetCategoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Partner Filters State & Calculation
+  const [partnerSearchQuery, setPartnerSearchQuery] = useState('');
+  const [partnerCategoryFilter, setPartnerCategoryFilter] = useState('all');
+
+  const filteredPartners = (partnersList || []).filter(p => {
+    if (!p) return false;
+    const name = (p.name || '').toLowerCase();
+    const owner = (p.owner || '').toLowerCase();
+    const phone = (p.phone || '').toLowerCase();
+    const email = (p.email || '').toLowerCase();
+    const location = (p.location || p.hubLocation || '').toLowerCase();
+    const q = (partnerSearchQuery || searchQuery || '').toLowerCase();
+    const matchesSearch = name.includes(q) || owner.includes(q) || phone.includes(q) || email.includes(q) || location.includes(q);
+    const matchesCategory = partnerCategoryFilter === 'all' || (p.type || '').includes(partnerCategoryFilter);
     return matchesSearch && matchesCategory;
   });
 
@@ -675,7 +913,7 @@ const Admin = () => {
               
               {/* STICKY TOP HEADER & FILTERS PANEL */}
               <div className="admin-top-sticky-header">
-                <div className="admin-page-title" style={{ marginBottom: '1rem' }}>
+                <div className="admin-page-title" style={{ marginBottom: '1.25rem' }}>
                   <div>
                     <h1>Fleet & Experience Inventory</h1>
                     <p>Manage all listed bikes, scooties, self-drive cars, and adventure packages.</p>
@@ -685,8 +923,61 @@ const Admin = () => {
                   </button>
                 </div>
 
+                {/* Fleet Overview Quick Stats Grid */}
+                <div className="admin-stats-grid" style={{ marginBottom: '1.25rem' }}>
+                  <div className="admin-stat-card" style={{ padding: '1rem 1.25rem' }}>
+                    <div>
+                      <div className="stat-info-title">Total Fleet</div>
+                      <div className="stat-info-val" style={{ fontSize: '1.5rem' }}>{fleetList.length}</div>
+                      <div className="stat-info-trend" style={{ color: '#0284c7' }}>Listed Inventory</div>
+                    </div>
+                    <div className="stat-icon-wrap" style={{ width: '44px', height: '44px', background: '#e0f2fe', color: '#0284c7' }}>
+                      <Bike size={20} />
+                    </div>
+                  </div>
+
+                  <div className="admin-stat-card" style={{ padding: '1rem 1.25rem' }}>
+                    <div>
+                      <div className="stat-info-title">Available for Rent</div>
+                      <div className="stat-info-val" style={{ fontSize: '1.5rem', color: '#16a34a' }}>
+                        {fleetList.filter(f => f.status === 'Available').length}
+                      </div>
+                      <div className="stat-info-trend" style={{ color: '#16a34a' }}>Ready for Booking</div>
+                    </div>
+                    <div className="stat-icon-wrap" style={{ width: '44px', height: '44px', background: '#dcfce7', color: '#15803d' }}>
+                      <CheckCircle size={20} />
+                    </div>
+                  </div>
+
+                  <div className="admin-stat-card" style={{ padding: '1rem 1.25rem' }}>
+                    <div>
+                      <div className="stat-info-title">Under Maintenance</div>
+                      <div className="stat-info-val" style={{ fontSize: '1.5rem', color: '#ea580c' }}>
+                        {fleetList.filter(f => f.status !== 'Available').length}
+                      </div>
+                      <div className="stat-info-trend" style={{ color: '#ea580c' }}>Service / On Road</div>
+                    </div>
+                    <div className="stat-icon-wrap" style={{ width: '44px', height: '44px', background: '#fff7ed', color: '#ea580c' }}>
+                      <Clock size={20} />
+                    </div>
+                  </div>
+
+                  <div className="admin-stat-card" style={{ padding: '1rem 1.25rem' }}>
+                    <div>
+                      <div className="stat-info-title">Fleet Categories</div>
+                      <div className="stat-info-val" style={{ fontSize: '1.5rem' }}>
+                        {new Set(fleetList.map(f => f.itemType)).size || 3} Types
+                      </div>
+                      <div className="stat-info-trend" style={{ color: '#64748b' }}>Bikes, Cars & Experiences</div>
+                    </div>
+                    <div className="stat-icon-wrap" style={{ width: '44px', height: '44px', background: '#f1f5f9', color: '#475569' }}>
+                      <Car size={20} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Filter Row */}
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <button 
                     className={`btn ${fleetCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setFleetCategoryFilter('all')}
@@ -699,21 +990,21 @@ const Admin = () => {
                     onClick={() => setFleetCategoryFilter('Bike')}
                     style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
                   >
-                    Bikes & Scooties ({fleetList.filter(f => f.itemType === 'Bike').length})
+                    🏍️ Bikes & Scooties ({fleetList.filter(f => f.itemType === 'Bike').length})
                   </button>
                   <button 
                     className={`btn ${fleetCategoryFilter === 'Car' ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setFleetCategoryFilter('Car')}
                     style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
                   >
-                    Cars & Cabs ({fleetList.filter(f => f.itemType === 'Car').length})
+                    🚗 Cars & Cabs ({fleetList.filter(f => f.itemType === 'Car').length})
                   </button>
                   <button 
                     className={`btn ${fleetCategoryFilter === 'Experience' ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setFleetCategoryFilter('Experience')}
                     style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }}
                   >
-                    Experiences ({fleetList.filter(f => f.itemType === 'Experience').length})
+                    🧗 Experiences ({fleetList.filter(f => f.itemType === 'Experience').length})
                   </button>
                 </div>
               </div>
@@ -724,67 +1015,116 @@ const Admin = () => {
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        <th>Item</th>
-                        <th>Type</th>
-                        <th>Daily Rate</th>
+                        <th>Vehicle & Identity</th>
+                        <th>Type & Category</th>
+                        <th>Assigned Host</th>
+                        <th>Rental Rates</th>
                         <th>Rating</th>
-                        <th>Location</th>
+                        <th>Pickup Hub</th>
                         <th>Status</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredFleet.map(item => (
-                        <tr key={item.id}>
-                          <td style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <img src={item.image} alt={item.title} style={{ width: '48px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
-                            <div>
-                              <strong>{item.title}</strong>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>ID: {item.id}</div>
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '0.2rem 0.6rem', borderRadius: '4px', background: '#f1f5f9' }}>
-                              {item.itemType}
-                            </span>
-                          </td>
-                          <td><strong>{item.dailyRate || item.price}</strong></td>
-                          <td>★ {item.rating} ({item.reviews})</td>
-                          <td>{item.location}</td>
-                          <td>
-                            <span className={`status-pill ${item.status === 'Available' ? 'success' : 'danger'}`}>
-                              {item.status}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      {filteredFleet.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1.5rem', color: '#64748b' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                              <Bike size={36} style={{ color: '#cbd5e1' }} />
+                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>No fleet items found</div>
+                              <p style={{ margin: 0, fontSize: '0.85rem' }}>No vehicles match the selected category filter or search query.</p>
                               <button 
-                                className="btn btn-outline" 
-                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}
-                                onClick={() => handleToggleStatus(item.id)}
+                                className="btn btn-primary" 
+                                style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}
+                                onClick={() => { setFleetCategoryFilter('all'); setSearchQuery(''); }}
                               >
-                                Toggle Status
-                              </button>
-                              <button 
-                                className="btn btn-outline" 
-                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', color: '#0284c7', borderColor: '#bae6fd' }}
-                                title="Edit Vehicle Details"
-                                onClick={() => handleEditVehicle(item)}
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                              <button 
-                                className="btn btn-outline" 
-                                style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', color: '#ef4444', borderColor: '#fee2e2' }}
-                                title="Delete Item"
-                                onClick={() => handleDeleteItem(item.id)}
-                              >
-                                <Trash2 size={14} />
+                                Reset Filter
                               </button>
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredFleet.map(item => (
+                          <tr key={item.id}>
+                            <td style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                              <img 
+                                src={item.image || 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=400&q=80'} 
+                                alt={item.title} 
+                                style={{ width: '56px', height: '42px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }} 
+                              />
+                              <div>
+                                <strong style={{ color: '#0f172a', display: 'block', fontSize: '0.92rem' }}>{item.title}</strong>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
+                                  <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                                    ID: {item.id}
+                                  </span>
+                                  {item.reg_no && item.reg_no !== 'N/A' && (
+                                    <span style={{ fontSize: '0.72rem', color: '#0284c7', background: '#e0f2fe', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                      Plate: {item.reg_no}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.78rem', fontWeight: '700', padding: '0.25rem 0.65rem', borderRadius: '6px', background: item.itemType === 'Bike' ? '#eff6ff' : item.itemType === 'Car' ? '#f0fdf4' : '#fff7ed', color: item.itemType === 'Bike' ? '#1d4ed8' : item.itemType === 'Car' ? '#15803d' : '#c2410c' }}>
+                                {item.itemType} • {item.category}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.82rem', fontWeight: '600', color: '#475569' }}>
+                                {item.hosted_by || item.hostedBy || 'vahan.rentals'}
+                              </span>
+                            </td>
+                            <td>
+                              <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{item.dailyRate || item.price}</strong>
+                              {item.weekly_rate && (
+                                <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{item.weekly_rate}</div>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#d97706' }}>★ {item.rating || '4.9'}</span>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '3px' }}>({item.reviews || '24'})</span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: '0.82rem', color: '#334155' }}>📍 {item.location || 'Tapovan Rishikesh'}</span>
+                            </td>
+                            <td>
+                              <span className={`status-pill ${item.status === 'Available' ? 'success' : 'danger'}`}>
+                                {item.status === 'Available' ? '🟢 Available' : '🛠️ ' + (item.status || 'Maintenance')}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                <button 
+                                  className="btn btn-outline" 
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', fontWeight: '600' }}
+                                  onClick={() => handleToggleStatus(item.id)}
+                                  title="Toggle vehicle availability status"
+                                >
+                                  {item.status === 'Available' ? 'Hold' : 'Activate'}
+                                </button>
+                                <button 
+                                  className="btn btn-outline" 
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: '#0284c7', borderColor: '#bae6fd' }}
+                                  title="Edit Vehicle Details"
+                                  onClick={() => handleEditVehicle(item)}
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button 
+                                  className="btn btn-outline" 
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: '#ef4444', borderColor: '#fee2e2' }}
+                                  title="Delete Vehicle"
+                                  onClick={() => handleDeleteItem(item.id)}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1059,7 +1399,7 @@ const Admin = () => {
                 <div className="admin-stat-card">
                   <div>
                     <div className="stat-info-title">Partner Fleet Listed</div>
-                    <div className="stat-info-val">{partnersList.reduce((acc, curr) => acc + curr.vehiclesCount, 0)} Vehicles</div>
+                    <div className="stat-info-val">{partnersList.reduce((acc, curr) => acc + (Number(curr?.vehiclesCount) || 0), 0)} Vehicles</div>
                     <div className="stat-info-trend" style={{ color: '#0284c7' }}>Across Rishikesh & Dehradun</div>
                   </div>
                   <div className="stat-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
@@ -1070,7 +1410,7 @@ const Admin = () => {
                 <div className="admin-stat-card">
                   <div>
                     <div className="stat-info-title">Total Partner Earnings</div>
-                    <div className="stat-info-val">₹{partnersList.reduce((acc, curr) => acc + curr.earnings, 0).toLocaleString()}</div>
+                    <div className="stat-info-val">₹{partnersList.reduce((acc, curr) => acc + (Number(curr?.earnings) || 0), 0).toLocaleString('en-IN')}</div>
                     <div className="stat-info-trend" style={{ color: '#10b981' }}>Revenue & Payouts</div>
                   </div>
                   <div className="stat-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
@@ -1090,6 +1430,50 @@ const Admin = () => {
                 </div>
               </div>
 
+              {/* Partner Search & Filter Row */}
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ flex: '1', minWidth: '260px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Search by agency, owner name, phone, email, or hub..." 
+                    value={partnerSearchQuery}
+                    onChange={(e) => setPartnerSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 1rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.88rem',
+                      background: '#ffffff',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button 
+                    className={`btn ${partnerCategoryFilter === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setPartnerCategoryFilter('all')}
+                    style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
+                  >
+                    All Hosts ({partnersList.length})
+                  </button>
+                  <button 
+                    className={`btn ${partnerCategoryFilter === 'Bike' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setPartnerCategoryFilter('Bike')}
+                    style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
+                  >
+                    🛵 Bike Hosts ({partnersList.filter(p => (p.type || '').includes('Bike')).length})
+                  </button>
+                  <button 
+                    className={`btn ${partnerCategoryFilter === 'Car' ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setPartnerCategoryFilter('Car')}
+                    style={{ padding: '0.45rem 1rem', fontSize: '0.82rem' }}
+                  >
+                    🚗 Car Hosts ({partnersList.filter(p => (p.type || '').includes('Car')).length})
+                  </button>
+                </div>
+              </div>
+
               {/* Partners Table */}
               <div className="admin-card">
                 <div className="admin-table-responsive">
@@ -1098,7 +1482,7 @@ const Admin = () => {
                       <tr>
                         <th>Host ID & Agency Name</th>
                         <th>Owner Name</th>
-                        <th>Contact Phone / Email</th>
+                        <th>Contact Details</th>
                         <th>Category / Hub</th>
                         <th>Fleet Count</th>
                         <th>Total Earnings & Payout</th>
@@ -1107,66 +1491,94 @@ const Admin = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {partnersList.map((p) => (
-                        <tr key={p.id}>
-                          <td>
-                            <strong>{p.name}</strong>
-                            <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700' }}>ID: {p.id}</div>
-                          </td>
-                          <td><strong>{p.owner}</strong></td>
-                          <td>
-                            <div>{p.phone}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.email}</div>
-                          </td>
-                          <td>
-                            <span className="type-badge">{p.type}</span>
-                            <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>📍 {p.location}</div>
-                          </td>
-                          <td><strong>{p.vehiclesCount} Vehicles</strong></td>
-                          <td>
-                            <strong>₹{p.earnings.toLocaleString()}</strong>
-                            <div style={{ fontSize: '0.74rem', color: p.payoutStatus === 'Settled' ? '#16a34a' : '#d97706', fontWeight: '700' }}>
-                              {p.payoutStatus}
-                            </div>
-                          </td>
-                          <td>
-                            <span className={`status-pill ${p.status === 'Active Verified' ? 'success' : 'warning'}`}>
-                              {p.status === 'Active Verified' ? '🟢 Active Verified' : '⏳ Pending Review'}
-                            </span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {filteredPartners.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', padding: '3rem 1.5rem', color: '#64748b' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+                              <Handshake size={36} style={{ color: '#cbd5e1' }} />
+                              <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>No partner hosts found</div>
+                              <p style={{ margin: 0, fontSize: '0.85rem' }}>No partners matched your filter criteria or search query.</p>
                               <button 
-                                type="button"
-                                className="btn btn-outline" 
-                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                onClick={() => setSelectedPartnerDetails(p)}
-                                title="View Full Host & Partner Details"
+                                className="btn btn-primary"
+                                style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}
+                                onClick={() => { setPartnerCategoryFilter('all'); setPartnerSearchQuery(''); }}
                               >
-                                <Eye size={13} /> View Details
+                                Reset Search
                               </button>
-                              {p.status !== 'Active Verified' && (
-                                <button 
-                                  className="btn btn-primary"
-                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
-                                  onClick={() => handleApprovePartner(p.id)}
-                                >
-                                  Approve Partner
-                                </button>
-                              )}
-                              {p.payoutStatus.includes('Pending') && (
-                                <button 
-                                  className="btn btn-outline"
-                                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: '#059669', borderColor: '#059669' }}
-                                  onClick={() => handleSettlePartnerPayout(p.id)}
-                                >
-                                  Settle Payout
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredPartners.map((p) => (
+                          <tr key={p.id}>
+                            <td>
+                              <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{p.name}</strong>
+                              <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '700', marginTop: '2px' }}>ID: {p.id}</div>
+                            </td>
+                            <td><strong style={{ color: '#334155' }}>{p.owner}</strong></td>
+                            <td>
+                              <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '0.85rem' }}>{p.phone}</div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{p.email}</div>
+                            </td>
+                            <td>
+                              <span className="type-badge">{p.type}</span>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>📍 {p.location || 'Tapovan Rishikesh'}</div>
+                            </td>
+                            <td><strong style={{ color: '#0284c7' }}>{p.vehiclesCount || 0} Vehicles</strong></td>
+                            <td>
+                              <strong style={{ color: '#0f172a' }}>₹{(Number(p.earnings) || 0).toLocaleString('en-IN')}</strong>
+                              <div style={{ fontSize: '0.74rem', color: p.payoutStatus === 'Settled' ? '#16a34a' : '#d97706', fontWeight: '700' }}>
+                                {p.payoutStatus === 'Settled' ? '🟢 Settled' : '⏳ ' + (p.payoutStatus || 'Pending')}
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`status-pill ${p.status === 'Active Verified' ? 'success' : 'warning'}`}>
+                                {p.status === 'Active Verified' ? '🟢 Active Verified' : '⏳ Pending Review'}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <button 
+                                  type="button"
+                                  className="btn btn-outline" 
+                                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#ea580c', borderColor: '#fdba74', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                  onClick={() => setSelectedPartnerDetails(p)}
+                                  title="View Full Host & Partner Details"
+                                >
+                                  <Eye size={13} /> View Details
+                                </button>
+                                {p.status !== 'Active Verified' && (
+                                  <button 
+                                    className="btn btn-primary" 
+                                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
+                                    onClick={() => handleApprovePartner(p.id)}
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+                                {(p.payoutStatus || '').includes('Pending') && (
+                                  <button 
+                                    className="btn btn-outline" 
+                                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: '#059669', borderColor: '#059669' }}
+                                    onClick={() => handleSettlePartnerPayout(p.id)}
+                                  >
+                                    Settle
+                                  </button>
+                                )}
+                                <button 
+                                  type="button"
+                                  className="btn btn-outline" 
+                                  style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', color: '#ef4444', borderColor: '#fee2e2' }}
+                                  onClick={() => handleDeletePartner(p.id)}
+                                  title="Delete Partner Host"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1432,8 +1844,8 @@ const Admin = () => {
                     </label>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem', alignItems: 'center' }}>
-                      {/* Option A: Device File Upload */}
-                      <div>
+                      {/* Option A: ImageKit File Upload */}
+                      <div style={{ flex: 1 }}>
                         <label 
                           htmlFor="vehicle-photo-upload-input"
                           style={{
@@ -1443,26 +1855,41 @@ const Admin = () => {
                             justifyContent: 'center',
                             gap: '0.35rem',
                             padding: '0.9rem',
-                            background: '#ffffff',
-                            border: '2px dashed #ea580c',
+                            background: isUploadingImage ? '#fff7ed' : '#ffffff',
+                            border: isUploadingImage ? '2px solid #ea580c' : '2px dashed #ea580c',
                             borderRadius: '8px',
-                            cursor: 'pointer',
+                            cursor: isUploadingImage ? 'wait' : 'pointer',
                             transition: 'all 0.2s ease',
                             textAlign: 'center'
                           }}
                         >
-                          <Upload size={22} color="#ea580c" />
-                          <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f172a' }}>
-                            📁 Upload Photo from Device
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                            Supports JPG, PNG, WEBP (Max 5MB)
-                          </span>
+                          {isUploadingImage ? (
+                            <>
+                              <Loader2 size={24} color="#ea580c" className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                              <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#ea580c' }}>
+                                Uploading to ImageKit CDN...
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                Optimizing & generating CDN delivery URL
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={22} color="#ea580c" />
+                              <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f172a' }}>
+                                📁 Upload Photo from Device
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                Cloud Upload to ImageKit (Max 10MB)
+                              </span>
+                            </>
+                          )}
                         </label>
                         <input 
                           id="vehicle-photo-upload-input"
                           type="file" 
                           accept="image/*"
+                          disabled={isUploadingImage}
                           onChange={handleImageFileUpload}
                           style={{ display: 'none' }}
                         />
@@ -1471,11 +1898,11 @@ const Admin = () => {
                       {/* Option B: Direct Image URL */}
                       <div>
                         <label style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', display: 'block', marginBottom: '0.35rem' }}>
-                          OR Paste Direct Image URL:
+                          OR Paste Direct Image URL (ImageKit / Web):
                         </label>
                         <input 
                           type="text" 
-                          placeholder="https://images.unsplash.com/..." 
+                          placeholder="https://ik.imagekit.io/... or https://images.unsplash.com/..." 
                           value={newVehicle.image}
                           onChange={(e) => setNewVehicle({ ...newVehicle, image: e.target.value })}
                           style={{
@@ -1490,6 +1917,22 @@ const Admin = () => {
                       </div>
                     </div>
 
+                    {/* Upload Status Banner */}
+                    {uploadStatus && (
+                      <div style={{
+                        marginTop: '0.65rem',
+                        padding: '0.45rem 0.75rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        background: uploadStatus.type === 'success' ? '#ecfdf5' : uploadStatus.type === 'loading' ? '#fff7ed' : '#f8fafc',
+                        color: uploadStatus.type === 'success' ? '#059669' : uploadStatus.type === 'loading' ? '#ea580c' : '#475569',
+                        border: uploadStatus.type === 'success' ? '1px solid #a7f3d0' : '1px solid #e2e8f0'
+                      }}>
+                        {uploadStatus.text}
+                      </div>
+                    )}
+
                     {/* Live Image Preview */}
                     {newVehicle.image && (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '0.65rem 0.85rem', borderRadius: '8px', marginTop: '0.85rem', border: '1px solid #e2e8f0' }}>
@@ -1501,12 +1944,17 @@ const Admin = () => {
                           />
                           <div>
                             <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#0f172a', display: 'block' }}>Photo Loaded Successfully</span>
-                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '600' }}>✓ Live Preview on Portal Listing</span>
+                            <span style={{ fontSize: '0.72rem', color: newVehicle.image.includes('imagekit.io') ? '#0284c7' : '#16a34a', fontWeight: '700' }}>
+                              {newVehicle.image.includes('imagekit.io') ? '⚡ ImageKit Fast CDN Active' : '✓ Live Preview on Portal Listing'}
+                            </span>
                           </div>
                         </div>
                         <button
                           type="button"
-                          onClick={() => setNewVehicle({ ...newVehicle, image: '' })}
+                          onClick={() => {
+                            setNewVehicle({ ...newVehicle, image: '' });
+                            setUploadStatus(null);
+                          }}
                           style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '700' }}
                         >
                           Remove Photo
@@ -1579,13 +2027,154 @@ const Admin = () => {
                   </div>
                 </div>
 
-                {/* SECTION 3: TECHNICAL SPECIFICATIONS */}
+                {/* SECTION 3: TECHNICAL SPECIFICATIONS & GOOGLE AUTO-FETCH */}
                 <div style={{ marginBottom: '1.75rem', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0f172a', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ background: '#eff6ff', color: '#2563eb', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem' }}>SECTION 3</span>
-                    Vehicle Technical Specifications
-                  </h4>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ background: '#eff6ff', color: '#2563eb', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem' }}>SECTION 3</span>
+                      Vehicle Technical Specifications
+                    </h4>
+                    <span style={{ fontSize: '0.72rem', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Sparkles size={13} color="#16a34a" /> Auto-Fetch Tech Specs Enabled
+                    </span>
+                  </div>
 
+                  {/* 🔍 SPECS AUTO-FETCH SEARCH BAR */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%)',
+                    border: '1.5px solid #bfdbfe',
+                    borderRadius: '10px',
+                    padding: '1rem',
+                    marginBottom: '1.25rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: '800', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Search size={15} color="#2563eb" />
+                        Search Vehicle Model to Auto-Fill Technical Specs:
+                      </label>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                        Powered by Google & Database
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Royal Enfield Himalayan 450, Thar 4x4, KTM Duke 390, Activa 6G, Innova Crysta..." 
+                          value={specsSearchQuery}
+                          onChange={(e) => setSpecsSearchQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAutoFetchSpecs();
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.65rem 0.85rem',
+                            borderRadius: '8px',
+                            border: '1.5px solid #93c5fd',
+                            fontSize: '0.85rem',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontWeight: '600'
+                          }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAutoFetchSpecs()}
+                        disabled={isFetchingSpecs}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          background: isFetchingSpecs ? '#94a3b8' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '0.65rem 1.15rem',
+                          borderRadius: '8px',
+                          fontSize: '0.82rem',
+                          fontWeight: '800',
+                          cursor: isFetchingSpecs ? 'not-allowed' : 'pointer',
+                          boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {isFetchingSpecs ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                            Fetching Specs...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} />
+                            ✨ Auto-Fill Specs
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Quick Model Suggestion Chips */}
+                    <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#64748b', marginRight: '0.25rem' }}>
+                        Quick Select:
+                      </span>
+                      {[
+                        'Himalayan 450',
+                        'Classic 350',
+                        'KTM Duke 390',
+                        'Thar 4x4',
+                        'Scorpio-N',
+                        'Innova Crysta',
+                        'Activa 6G',
+                        'TVS NTORQ 125'
+                      ].map((modelName) => (
+                        <button
+                          key={modelName}
+                          type="button"
+                          onClick={() => {
+                            setSpecsSearchQuery(modelName);
+                            handleAutoFetchSpecs(modelName);
+                          }}
+                          style={{
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '14px',
+                            padding: '0.2rem 0.55rem',
+                            fontSize: '0.7rem',
+                            fontWeight: '600',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.color = '#2563eb'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#334155'; }}
+                        >
+                          + {modelName}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Specs Feedback Banner */}
+                    {specsFeedbackMessage && (
+                      <div style={{
+                        marginTop: '0.65rem',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        fontWeight: '700',
+                        background: specsFeedbackMessage.type === 'success' ? '#ecfdf5' : specsFeedbackMessage.type === 'error' ? '#fef2f2' : '#fffbeb',
+                        color: specsFeedbackMessage.type === 'success' ? '#047857' : specsFeedbackMessage.type === 'error' ? '#b91c1c' : '#b45309',
+                        border: specsFeedbackMessage.type === 'success' ? '1px solid #a7f3d0' : specsFeedbackMessage.type === 'error' ? '1px solid #fecaca' : '1px solid #fde68a'
+                      }}>
+                        {specsFeedbackMessage.text}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 📋 TECHNICAL SPECIFICATION INPUT FIELDS */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                     <div className="admin-form-group">
                       <label>Engine Capacity</label>
@@ -1618,7 +2207,7 @@ const Admin = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginTop: '0.75rem' }}>
                     <div className="admin-form-group">
                       <label>Mileage / Battery Range</label>
                       <input 
@@ -2213,14 +2802,14 @@ const Admin = () => {
                     <div className="review-field-box">
                       <span className="field-label">TOTAL EARNINGS</span>
                       <strong className="field-value" style={{ fontSize: '1.1rem', color: '#0f172a' }}>
-                        ₹{selectedPartnerDetails.earnings.toLocaleString()}
+                        ₹{(Number(selectedPartnerDetails.earnings) || 0).toLocaleString('en-IN')}
                       </strong>
                     </div>
 
                     <div className="review-field-box">
                       <span className="field-label">PAYOUT STATUS</span>
                       <strong className="field-value" style={{ color: selectedPartnerDetails.payoutStatus === 'Settled' ? '#16a34a' : '#d97706' }}>
-                        {selectedPartnerDetails.payoutStatus}
+                        {selectedPartnerDetails.payoutStatus || 'Pending'}
                       </strong>
                     </div>
 
@@ -2234,36 +2823,59 @@ const Admin = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-                  {selectedPartnerDetails.status !== 'Active Verified' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
                     <button 
-                      type="button"
-                      className="btn btn-primary"
-                      style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
-                      onClick={() => {
-                        handleApprovePartner(selectedPartnerDetails.id);
-                        setSelectedPartnerDetails({ ...selectedPartnerDetails, status: 'Active Verified' });
-                      }}
-                    >
-                      Approve Partner Account
-                    </button>
-                  )}
-                  {selectedPartnerDetails.payoutStatus.includes('Pending') && (
-                    <button 
-                      type="button"
+                      type="button" 
                       className="btn btn-outline"
-                      style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', color: '#059669', borderColor: '#059669' }}
-                      onClick={() => {
-                        handleSettlePartnerPayout(selectedPartnerDetails.id);
-                        setSelectedPartnerDetails({ ...selectedPartnerDetails, payoutStatus: 'Settled' });
-                      }}
+                      style={{ color: '#ef4444', borderColor: '#fecaca', fontSize: '0.82rem', padding: '0.5rem 0.9rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      onClick={() => handleDeletePartner(selectedPartnerDetails.id)}
                     >
-                      Settle Revenue Payout
+                      <Trash2 size={14} /> Remove Partner
                     </button>
-                  )}
-                  <button type="button" className="btn btn-outline" onClick={() => setSelectedPartnerDetails(null)}>
-                    Close
-                  </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <a
+                      href={`https://wa.me/${(selectedPartnerDetails.phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${selectedPartnerDetails.owner || selectedPartnerDetails.name}, this is Vahan.Rentals Admin regarding your host account (${selectedPartnerDetails.id}).`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-outline"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.82rem', color: '#16a34a', borderColor: '#86efac', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <MessageSquare size={14} /> WhatsApp Host
+                    </a>
+
+                    {selectedPartnerDetails.status !== 'Active Verified' && (
+                      <button 
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', background: '#16a34a', borderColor: '#16a34a', color: '#ffffff' }}
+                        onClick={() => {
+                          handleApprovePartner(selectedPartnerDetails.id);
+                          setSelectedPartnerDetails({ ...selectedPartnerDetails, status: 'Active Verified' });
+                        }}
+                      >
+                        Approve Partner Account
+                      </button>
+                    )}
+                    {(selectedPartnerDetails.payoutStatus || '').includes('Pending') && (
+                      <button 
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ padding: '0.5rem 1.1rem', fontSize: '0.85rem', color: '#059669', borderColor: '#059669' }}
+                        onClick={() => {
+                          handleSettlePartnerPayout(selectedPartnerDetails.id);
+                          setSelectedPartnerDetails({ ...selectedPartnerDetails, payoutStatus: 'Settled' });
+                        }}
+                      >
+                        Settle Revenue Payout
+                      </button>
+                    )}
+                    <button type="button" className="btn btn-outline" onClick={() => setSelectedPartnerDetails(null)}>
+                      Close
+                    </button>
+                  </div>
                 </div>
 
               </div>

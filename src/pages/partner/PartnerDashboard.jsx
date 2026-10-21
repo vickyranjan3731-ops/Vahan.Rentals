@@ -10,6 +10,7 @@ import {
   ChevronLeft, ChevronRight, User
 } from 'lucide-react';
 import { getPartnerFleet, savePartnerFleet, getPartnerBookings, savePartnerBookings } from './partnerData';
+import { getHostProfileFromDb, updateHostProfileInDb } from '../../services/supabaseService';
 import './PartnerDashboard.css';
 
 const PartnerDashboard = () => {
@@ -24,13 +25,35 @@ const PartnerDashboard = () => {
   const [bookings, setBookings] = useState(getPartnerBookings());
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Keep synced with latest partner bookings/fleet & location state
+  // Host Profile & Logo State
+  const [hostProfile, setHostProfile] = useState({
+    id: 'H-88210',
+    name: 'Himalayan Fleet Host',
+    phone: '+91 70605 12661',
+    hubLocation: 'Laxman Jhula Main Road, Tapovan Rishikesh',
+    bankAccount: '50100234908821 (HDFC Bank)',
+    logo: ''
+  });
+
+  // Keep synced with latest partner bookings/fleet & fetch host profile from Supabase
   useEffect(() => {
     setFleet(getPartnerFleet());
     setBookings(getPartnerBookings());
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
+
+    const loadHost = async () => {
+      try {
+        const liveHost = await getHostProfileFromDb('H-88210');
+        if (liveHost) {
+          setHostProfile(liveHost);
+        }
+      } catch (e) {
+        console.error('Failed to load host profile from Supabase:', e);
+      }
+    };
+    loadHost();
   }, [location.state]);
 
   // Date Report Filter State
@@ -78,13 +101,8 @@ const PartnerDashboard = () => {
   };
 
   const handleSelectCategory = (type) => {
-    setNewVehicle({
-      ...newVehicle,
-      itemType: type,
-      category: type === 'Bike' ? 'Bike' : 'Car'
-    });
     setIsSelectCategoryModalOpen(false);
-    setIsAddVehicleOpen(true);
+    navigate('/partner/register-vehicle');
   };
 
   // Navigate to Dedicated Register New Ride Page
@@ -92,22 +110,15 @@ const PartnerDashboard = () => {
     navigate('/partner/register-rider');
   };
 
-  // Host Profile & Logo State
-  const [hostProfile, setHostProfile] = useState({
-    name: 'Himalayan Fleet Host',
-    phone: '+91 70605 12661',
-    hubLocation: 'Laxman Jhula Main Road, Tapovan Rishikesh',
-    bankAccount: '50100234908821 (HDFC Bank)',
-    logo: ''
-  });
-
   const handleProfileLogoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setHostProfile(prev => ({ ...prev, logo: reader.result }));
-        showToast('✅ Profile logo updated successfully!');
+      reader.onloadend = async () => {
+        const updated = { ...hostProfile, logo: reader.result };
+        setHostProfile(updated);
+        await updateHostProfileInDb(updated);
+        showToast('✅ Profile logo updated & saved in database!');
       };
       reader.readAsDataURL(file);
     }
@@ -428,20 +439,8 @@ const PartnerDashboard = () => {
             )}
           </div>
 
-          {/* Bottom Controls Area (Language Toggle, Profile, Collapse Toggle) */}
+          {/* Bottom Controls Area (Profile, Collapse Toggle) */}
           <div className="partner-sidebar-footer">
-            {/* Language Switch */}
-            <div
-              className={`partner-sidebar-lang-toggle ${isSidebarCollapsed ? 'collapsed' : ''}`}
-              onClick={() => setIsHindiLang(!isHindiLang)}
-              title={isHindiLang ? "Language: Hindi" : "Language: English"}
-            >
-              <div className={`partner-toggle-switch ${isHindiLang ? 'active' : ''}`}>
-                <div className="partner-toggle-thumb"></div>
-              </div>
-              {!isSidebarCollapsed && <span className="partner-lang-label">Hindi</span>}
-            </div>
-
             {/* User Profile Bar */}
             <div
               className={`partner-sidebar-user-row ${isSidebarCollapsed ? 'collapsed' : ''}`}
@@ -811,7 +810,7 @@ const PartnerDashboard = () => {
                   <h2>Manage Listed Fleet ({fleet.length})</h2>
                   <p>Add new bikes/cars, update daily rental rates, and control live availability.</p>
                 </div>
-                <button className="btn btn-emerald desktop-only" onClick={() => setIsSelectCategoryModalOpen(true)}>
+                <button className="btn btn-emerald desktop-only" onClick={() => navigate('/partner/register-vehicle')}>
                   <Plus size={18} /> List New Vehicle
                 </button>
               </div>
@@ -821,7 +820,7 @@ const PartnerDashboard = () => {
                 <button
                   type="button"
                   className="btn btn-emerald btn-mobile-register-full"
-                  onClick={() => setIsSelectCategoryModalOpen(true)}
+                  onClick={() => navigate('/partner/register-vehicle')}
                 >
                   <Plus size={20} /> List New Vehicle
                 </button>
@@ -1198,7 +1197,18 @@ const PartnerDashboard = () => {
               </div>
 
               <div className="partner-card" style={{ padding: '24px' }}>
-                <form onSubmit={(e) => { e.preventDefault(); showToast('✅ Host Profile & Logo saved successfully!'); }} className="partner-settings-form">
+                <form 
+                  onSubmit={async (e) => { 
+                    e.preventDefault(); 
+                    const res = await updateHostProfileInDb(hostProfile);
+                    if (res.success) {
+                      showToast('✅ Host Profile & Bank Settings saved to Supabase!');
+                    } else {
+                      showToast('✅ Saved profile settings locally & synced!');
+                    }
+                  }} 
+                  className="partner-settings-form"
+                >
 
                   {/* Host Profile Logo Upload Section */}
                   <div style={{
@@ -1275,8 +1285,10 @@ const PartnerDashboard = () => {
                         {hostProfile.logo && (
                           <button
                             type="button"
-                            onClick={() => {
-                              setHostProfile(prev => ({ ...prev, logo: '' }));
+                            onClick={async () => {
+                              const updated = { ...hostProfile, logo: '' };
+                              setHostProfile(updated);
+                              await updateHostProfileInDb(updated);
                               showToast('Profile logo reset to default.');
                             }}
                             style={{

@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Bikes from './pages/Bikes';
 import Cars from './pages/Cars';
 import VehicleDetails from './pages/VehicleDetails';
+import Reservation from './pages/Reservation';
 import SearchResults from './pages/SearchResults';
 
 import HelpCenter from './pages/HelpCenter';
@@ -24,6 +25,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import PartnerLogin from './pages/partner/PartnerLogin';
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import RegisterNewRide from './pages/partner/RegisterNewRide';
+import RegisterNewVehicle from './pages/partner/RegisterNewVehicle';
 
 import './App.css';
 
@@ -44,6 +46,8 @@ const AppContent = () => {
         <Route path="/cars" element={<Cars />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/vehicle/:id" element={<VehicleDetails />} />
+        <Route path="/reserve/:id" element={<Reservation />} />
+        <Route path="/reservation/:id" element={<Reservation />} />
 
         {/* Support Routes */}
         <Route path="/help-center" element={<HelpCenter />} />
@@ -68,6 +72,10 @@ const AppContent = () => {
         <Route 
           path="/partner/register-rider" 
           element={isPartnerAuthenticated ? <RegisterNewRide /> : <Navigate to="/partner/login" replace />} 
+        />
+        <Route 
+          path="/partner/register-vehicle" 
+          element={isPartnerAuthenticated ? <RegisterNewVehicle /> : <Navigate to="/partner/login" replace />} 
         />
         <Route 
           path="/partner" 

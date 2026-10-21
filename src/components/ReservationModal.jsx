@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { saveBookingToDb } from '../services/supabaseService';
 import './ReservationModal.css';
 
 const ReservationModal = ({
@@ -133,7 +134,30 @@ const ReservationModal = ({
   };
 
   const isCar = isCarVehicle(vehicle);
-  const tokenAmount = isCar ? 500 : 100;
+  
+  const isExperienceService = (v) => {
+    if (!v) return false;
+    const idStr = (v.id || '').toLowerCase();
+    const titleStr = (v.title || '').toLowerCase();
+    const catStr = (v.category || '').toLowerCase();
+    return (
+      idStr === 'white-water-rafting' ||
+      idStr === 'char-dham-taxi-service' ||
+      idStr === 'bungee-jumping' ||
+      titleStr.includes('rafting') ||
+      titleStr.includes('char dham') ||
+      titleStr.includes('bungee') ||
+      catStr.includes('adventure') ||
+      catStr.includes('pilgrimage') ||
+      catStr.includes('extreme sport') ||
+      catStr.includes('experience') ||
+      v.type === 'Activity' ||
+      v.itemType === 'Experience'
+    );
+  };
+
+  const isExperience = isExperienceService(vehicle);
+  const tokenAmount = isCar ? 500 : (isExperience ? 200 : 100);
 
   // Extract numeric daily rate
   const getNumericPrice = (priceStr) => {
@@ -155,7 +179,7 @@ const ReservationModal = ({
 
   const rentalDays = calculateDays();
   const basePrice = dailyRate * rentalDays;
-  const securityDeposit = 1000;
+  const securityDeposit = isExperience ? 0 : 1000;
 
   // Pricing calculations based on payment method
   const totalPayable = paymentMethod === 'pickup' ? Math.min(tokenAmount, basePrice) : basePrice;
@@ -194,14 +218,27 @@ const ReservationModal = ({
     }
   };
 
+  const isValidEmail = (val) => {
+    if (!val || typeof val !== 'string') return false;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(val.trim());
+  };
+
   const validateRegistrationForm = () => {
     const errs = {};
+    if (!email || !email.trim()) {
+      errs.email = 'Email Address is required';
+    } else if (!isValidEmail(email)) {
+      errs.email = 'Invalid email address (e.g. name@example.com)';
+    }
     if (!fullName || !fullName.trim()) errs.fullName = 'Full Name is required';
     if (!phone || !phone.trim() || phone.trim().replace(/\D/g, '').length < 10) errs.phone = 'Valid 10-digit Mobile Number required';
-    if (!licenseNo || !licenseNo.trim()) errs.licenseNo = 'Driving License / Govt ID number required';
+    if (!isExperience && (!licenseNo || !licenseNo.trim())) {
+      errs.licenseNo = 'Driving License / Govt ID number required';
+    }
     if (!startDate) errs.startDate = 'Select start date';
     if (!endDate) errs.endDate = 'Select end date';
-    if (!agreedTerms) errs.agreedTerms = 'You must accept terms & helmet safety policy';
+    if (!agreedTerms) errs.agreedTerms = isExperience ? 'You must accept booking terms & safety policy' : 'You must accept terms & helmet safety policy';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -211,15 +248,16 @@ const ReservationModal = ({
     e.preventDefault();
     if (!validateRegistrationForm()) return;
     setCurrentStep('email_verify');
-    if (!email) {
-      setEmail(`${phone.replace(/\D/g, '') || 'user'}@gmail.com`);
-    }
   };
 
   // Trigger Send OTP for Email
   const handleSendOtp = () => {
-    if (!email || !email.includes('@')) {
-      setOtpError('Please enter a valid email address');
+    if (!email || !email.trim()) {
+      setOtpError('Email Address is required');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setOtpError('Invalid email address (e.g. name@example.com)');
       return;
     }
     setOtpError('');
@@ -264,6 +302,8 @@ const ReservationModal = ({
       aadharFileName: aadharFile ? aadharFile.name : 'Attached at Counter',
       aadharFileUrl: aadharFile ? aadharFile.url : null,
       pickupLocation,
+      hostName: vehicle.hostedBy || 'vahan.rentals',
+      hostPhone: vehicle.hostPhone || vehicle.phone || '+91 7060512661',
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       formattedStartDate: startDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -285,6 +325,9 @@ const ReservationModal = ({
     setTimeout(() => {
       setIsProcessingPayment(false);
 
+      // Save into Supabase Database
+      saveBookingToDb(reservationData).catch(e => console.warn('Supabase save error:', e));
+
       // Save into admin & user localStorage bookings
       try {
         const existingBookings = JSON.parse(localStorage.getItem('vahan_admin_bookings') || '[]');
@@ -296,11 +339,13 @@ const ReservationModal = ({
         console.error(err);
       }
 
+      setConfirmedBooking(reservationData);
+      setCurrentStep('confirmed');
       if (onReservationSuccess) {
         onReservationSuccess(reservationData);
       }
       onClose();
-    }, 1500);
+    }, 1200);
   };
 
   return (
@@ -374,6 +419,35 @@ const ReservationModal = ({
                 <h4 className="res-section-title">
                   <User size={16} className="text-primary" /> Primary Renter Details & Verification
                 </h4>
+
+                <div className="res-field" style={{ marginBottom: '0.85rem' }}>
+                  <label>Email Address <span className="req">*</span></label>
+                  <div className="res-input-wrap">
+                    <Mail size={16} className="res-input-icon" />
+                    <input 
+                      type="email" 
+                      placeholder="e.g. rahul.sharma@gmail.com" 
+                      value={email}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEmail(val);
+                        if (errors.email) {
+                          if (isValidEmail(val)) {
+                            setErrors(prev => ({ ...prev, email: null }));
+                          }
+                        }
+                      }}
+                      onBlur={() => {
+                        if (email && !isValidEmail(email)) {
+                          setErrors(prev => ({ ...prev, email: 'Invalid email address (e.g. name@example.com)' }));
+                        }
+                      }}
+                      className={errors.email ? 'error' : ''}
+                    />
+                  </div>
+                  {errors.email && <span className="err-msg">{errors.email}</span>}
+                </div>
+
                 <div className="res-input-grid">
                   <div className="res-field">
                     <label>Full Name <span className="req">*</span></label>
@@ -416,105 +490,110 @@ const ReservationModal = ({
                   </div>
                 </div>
 
-                <div className="res-field" style={{ marginTop: '0.85rem' }}>
-                  <label>Driving License / Govt ID Number <span className="req">*</span></label>
-                  <div className="res-input-wrap">
-                    <FileCheck size={16} className="res-input-icon" />
-                    <input 
-                      type="text" 
-                      placeholder="e.g. UK0720210098412 or Aadhar No." 
-                      value={licenseNo}
-                      onChange={(e) => {
-                        setLicenseNo(e.target.value);
-                        if (errors.licenseNo) setErrors(prev => ({ ...prev, licenseNo: null }));
-                      }}
-                      className={errors.licenseNo ? 'error' : ''}
-                    />
-                  </div>
-                  {errors.licenseNo && <span className="err-msg">{errors.licenseNo}</span>}
-                </div>
-
-                {/* Document Upload Area */}
-                {isKycVerified ? (
-                  <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '12px 14px', borderRadius: '10px', fontSize: '0.82rem', marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Sparkles size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
-                    <div>
-                      <strong style={{ display: 'block', fontSize: '0.85rem' }}>⚡ KYC VERIFIED RENTER (EXPRESS CHECKOUT)</strong>
-                      <p style={{ margin: '2px 0 0 0' }}>Your driving license & identity are pre-verified by Admin. Document upload skipped for fast checkout!</p>
+                {/* Driving License / Govt ID (Only for Vehicles/Bikes/Cars, not for Experiences) */}
+                {!isExperience && (
+                  <div className="res-field" style={{ marginTop: '0.85rem' }}>
+                    <label>Driving License / Govt ID Number <span className="req">*</span></label>
+                    <div className="res-input-wrap">
+                      <FileCheck size={16} className="res-input-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="e.g. UK0720210098412 or Aadhar No." 
+                        value={licenseNo}
+                        onChange={(e) => {
+                          setLicenseNo(e.target.value);
+                          if (errors.licenseNo) setErrors(prev => ({ ...prev, licenseNo: null }));
+                        }}
+                        className={errors.licenseNo ? 'error' : ''}
+                      />
                     </div>
+                    {errors.licenseNo && <span className="err-msg">{errors.licenseNo}</span>}
                   </div>
-                ) : (
-                  <div className="res-upload-container">
-                    <h5 className="res-sub-title">
-                      <UploadCloud size={15} className="text-primary" /> Upload ID Verification Documents
-                    </h5>
-                    
-                    <div className="res-upload-grid">
-                      {/* Driving License Upload */}
-                      <div className="upload-box">
-                        <label className="upload-label">Driving License Document / Photo</label>
-                        <div className={`upload-dropzone ${dlFile ? 'has-file' : ''}`}>
-                          <input 
-                            type="file" 
-                            accept="image/*,application/pdf" 
-                            onChange={handleDlUpload}
-                            id="dl-file-input"
-                            className="file-input-hidden"
-                          />
-                          {dlFile ? (
-                            <div className="uploaded-file-info">
-                              <CheckCircle2 size={18} className="text-success" />
-                              <div className="file-details">
-                                <span className="file-name">{dlFile.name}</span>
-                                <span className="file-size">{dlFile.size}</span>
-                              </div>
-                              <button type="button" className="remove-file-btn" onClick={() => setDlFile(null)}>
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ) : (
-                            <label htmlFor="dl-file-input" className="dropzone-content">
-                              <UploadCloud size={20} className="upload-icon" />
-                              <span className="prompt-text">Upload <strong>Driving License</strong></span>
-                              <span className="prompt-sub">JPG, PNG, PDF</span>
-                            </label>
-                          )}
-                        </div>
-                      </div>
+                )}
 
-                      {/* Aadhar Card Upload */}
-                      <div className="upload-box">
-                        <label className="upload-label">Aadhar Card / Passport Photo</label>
-                        <div className={`upload-dropzone ${aadharFile ? 'has-file' : ''}`}>
-                          <input 
-                            type="file" 
-                            accept="image/*,application/pdf" 
-                            onChange={handleAadharUpload}
-                            id="aadhar-file-input"
-                            className="file-input-hidden"
-                          />
-                          {aadharFile ? (
-                            <div className="uploaded-file-info">
-                              <CheckCircle2 size={18} className="text-success" />
-                              <div className="file-details">
-                                <span className="file-name">{aadharFile.name}</span>
-                                <span className="file-size">{aadharFile.size}</span>
-                              </div>
-                              <button type="button" className="remove-file-btn" onClick={() => setAadharFile(null)}>
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ) : (
-                            <label htmlFor="aadhar-file-input" className="dropzone-content">
-                              <UploadCloud size={20} className="upload-icon" />
-                              <span className="prompt-text">Upload <strong>Aadhar Card</strong></span>
-                              <span className="prompt-sub">JPG, PNG, PDF</span>
-                            </label>
-                          )}
-                        </div>
+                {/* Document Upload Area (Only for Vehicles/Bikes/Cars, not for Experiences) */}
+                {!isExperience && (
+                  isKycVerified ? (
+                    <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '12px 14px', borderRadius: '10px', fontSize: '0.82rem', marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Sparkles size={20} style={{ color: '#16a34a', flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ display: 'block', fontSize: '0.85rem' }}>⚡ KYC VERIFIED RENTER (EXPRESS CHECKOUT)</strong>
+                        <p style={{ margin: '2px 0 0 0' }}>Your driving license & identity are pre-verified by Admin. Document upload skipped for fast checkout!</p>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="res-upload-container">
+                      <h5 className="res-sub-title">
+                        <UploadCloud size={15} className="text-primary" /> Upload ID Verification Documents
+                      </h5>
+                      
+                      <div className="res-upload-grid">
+                        {/* Driving License Upload */}
+                        <div className="upload-box">
+                          <label className="upload-label">Driving License Document / Photo</label>
+                          <div className={`upload-dropzone ${dlFile ? 'has-file' : ''}`}>
+                            <input 
+                              type="file" 
+                              accept="image/*,application/pdf" 
+                              onChange={handleDlUpload}
+                              id="dl-file-input"
+                              className="file-input-hidden"
+                            />
+                            {dlFile ? (
+                              <div className="uploaded-file-info">
+                                <CheckCircle2 size={18} className="text-success" />
+                                <div className="file-details">
+                                  <span className="file-name">{dlFile.name}</span>
+                                  <span className="file-size">{dlFile.size}</span>
+                                </div>
+                                <button type="button" className="remove-file-btn" onClick={() => setDlFile(null)}>
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label htmlFor="dl-file-input" className="dropzone-content">
+                                <UploadCloud size={20} className="upload-icon" />
+                                <span className="prompt-text">Upload <strong>Driving License</strong></span>
+                                <span className="prompt-sub">JPG, PNG, PDF</span>
+                              </label>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Aadhar Card Upload */}
+                        <div className="upload-box">
+                          <label className="upload-label">Aadhar Card / Passport Photo</label>
+                          <div className={`upload-dropzone ${aadharFile ? 'has-file' : ''}`}>
+                            <input 
+                              type="file" 
+                              accept="image/*,application/pdf" 
+                              onChange={handleAadharUpload}
+                              id="aadhar-file-input"
+                              className="file-input-hidden"
+                            />
+                            {aadharFile ? (
+                              <div className="uploaded-file-info">
+                                <CheckCircle2 size={18} className="text-success" />
+                                <div className="file-details">
+                                  <span className="file-name">{aadharFile.name}</span>
+                                  <span className="file-size">{aadharFile.size}</span>
+                                </div>
+                                <button type="button" className="remove-file-btn" onClick={() => setAadharFile(null)}>
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <label htmlFor="aadhar-file-input" className="dropzone-content">
+                                <UploadCloud size={20} className="upload-icon" />
+                                <span className="prompt-text">Upload <strong>Aadhar Card</strong></span>
+                                <span className="prompt-sub">JPG, PNG, PDF</span>
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 )}
 
               </div>

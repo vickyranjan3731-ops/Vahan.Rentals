@@ -46,11 +46,13 @@
 }
 
 .res-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
   color: var(--primary-color, #ff9800);
   background: rgba(255, 152, 0, 0.1);
   padding: 3px 10px;
@@ -205,6 +207,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .res-input-grid {
@@ -811,6 +814,22 @@
     border-radius: 16px;
   }
 
+  .res-modal-header {
+    padding: 14px 16px;
+  }
+
+  .res-badge {
+    font-size: 0.62rem;
+    letter-spacing: 0.3px;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+
+  .res-title {
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
   .res-input-grid,
   .res-upload-grid,
   .bank-select-grid {
@@ -824,10 +843,6 @@
 
   .pay-tabs-header {
     flex-direction: column;
-  }
-
-  .res-modal-header {
-    padding: 16px;
   }
 
   .res-form {

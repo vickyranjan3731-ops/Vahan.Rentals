@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, MapPin, CheckCircle2, ChevronDown, ChevronUp, Calendar, Check, X, ShieldCheck, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DatePicker from 'react-datepicker';
@@ -25,6 +25,7 @@ const staggerContainer = {
 
 const VehicleDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [vehicle, setVehicle] = useState(null);
   const [selectedImg, setSelectedImg] = useState(0);
   const [startDate, setStartDate] = useState(new Date());
@@ -65,13 +66,17 @@ const VehicleDetails = () => {
   };
 
   const handleReserveNow = () => {
-    setIsReservationModalOpen(true);
+    if (!vehicle) return;
+    const startStr = startDate ? startDate.toISOString() : '';
+    const endStr = endDate ? endDate.toISOString() : '';
+    const loc = vehicle.location || '';
+    navigate(`/reserve/${vehicle.id}?startDate=${encodeURIComponent(startStr)}&endDate=${encodeURIComponent(endStr)}&location=${encodeURIComponent(loc)}`);
   };
 
   const handleAuthSuccess = (userData) => {
     setUserAuth(userData);
     setIsAuthOpen(false);
-    setIsReservationModalOpen(true);
+    handleReserveNow();
   };
 
   useEffect(() => {
@@ -180,6 +185,18 @@ const VehicleDetails = () => {
           </div>
 
           <div className="vehicle-header">
+            {/* Mobile Top Quick Reserve Button */}
+            <div className="mobile-top-reserve-wrapper">
+              <button 
+                type="button" 
+                className="btn btn-primary mobile-top-reserve-btn"
+                onClick={handleReserveNow}
+              >
+                <ShieldCheck size={18} />
+                <span>Reserve Now ({vehicle.dailyRate || vehicle.price})</span>
+              </button>
+            </div>
+
             <h1 className="vehicle-title">{vehicle.title}</h1>
             <div className="vehicle-meta">
               <div className="meta-item rating">
@@ -699,6 +716,10 @@ const VehicleDetails = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#64748b' }}>Rental Dates:</span>
                   <strong>{completedBooking.formattedStartDate} - {completedBooking.formattedEndDate}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Host / Desk Contact:</span>
+                  <strong style={{ color: '#059669' }}>{completedBooking.hostPhone || '+91 7060512661'}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                   <span style={{ color: '#64748b' }}>Total Rental Fare:</span>

@@ -325,20 +325,8 @@ const RegisterNewRide = () => {
             )}
           </div>
 
-          {/* Bottom Controls Area (Language Toggle, Profile, Collapse Toggle) */}
+          {/* Bottom Controls Area (Profile, Collapse Toggle) */}
           <div className="partner-sidebar-footer">
-            {/* Language Switch */}
-            <div
-              className={`partner-sidebar-lang-toggle ${isSidebarCollapsed ? 'collapsed' : ''}`}
-              onClick={() => setIsHindiLang(!isHindiLang)}
-              title={isHindiLang ? "Language: Hindi" : "Language: English"}
-            >
-              <div className={`partner-toggle-switch ${isHindiLang ? 'active' : ''}`}>
-                <div className="partner-toggle-thumb"></div>
-              </div>
-              {!isSidebarCollapsed && <span className="partner-lang-label">Hindi</span>}
-            </div>
-
             {/* User Profile Bar */}
             <div
               className={`partner-sidebar-user-row ${isSidebarCollapsed ? 'collapsed' : ''}`}
